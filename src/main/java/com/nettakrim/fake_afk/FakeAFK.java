@@ -8,6 +8,9 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,12 +19,14 @@ import java.util.UUID;
 
 public class FakeAFK implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("fake-afk");
+	public static FakeAFK instance;
 
 	public FakeAFKCommands commands;
 
 	public ArrayList<FakePlayerInfo> fakePlayers;
 
-	public static FakeAFK instance;
+	private final TextColor textColor = TextColor.fromRgb(0xAAAAAA);
+	private final TextColor nameTextColor = TextColor.fromRgb(0xF07F1D);
 
 	@Override
 	public void onInitialize() {
@@ -36,7 +41,9 @@ public class FakeAFK implements ModInitializer {
 
 	public boolean readyPlayer(ServerPlayerEntity player) {
 		if (player == null || getFakePlayerInfo(player) != null) return false;
-		fakePlayers.add(new FakePlayerInfo(player));
+		FakePlayerInfo fakePlayerInfo = new FakePlayerInfo(player);
+		fakePlayerInfo.readyForDisconnect();
+		fakePlayers.add(fakePlayerInfo);
 		return true;
 	}
 
@@ -44,7 +51,7 @@ public class FakeAFK implements ModInitializer {
 		ServerPlayerEntity player = handler.getPlayer();
 		FakePlayerInfo info = getFakePlayerInfo(player);
 		if (info != null) {
-			info.spawnFakePlayer();
+			info.realPlayerDisconnect();
 		}
 	}
 
@@ -73,5 +80,11 @@ public class FakeAFK implements ModInitializer {
 			}
 		}
 		return null;
+	}
+
+	public void say(ServerPlayerEntity player, String message, Object... args) {
+		if (player == null) return;
+		Text text = Text.literal("[Fake AFK] ").setStyle(Style.EMPTY.withColor(nameTextColor)).append(Text.literal(message.formatted(args)).setStyle(Style.EMPTY.withColor(textColor)));
+		player.sendMessage(text);
 	}
 }
