@@ -28,18 +28,21 @@ public class NameCommand implements Command<ServerCommandSource> {
         ServerPlayerEntity player = context.getSource().getPlayer();
         String name = StringArgumentType.getString(context, "name");
         if (!name.contains("-")) {
-            FakeAFK.instance.say(player, "you must have a - somewhere in the name to distinguish Fake You from real players (for instance is-steve-afk)");
+            FakeAFK.instance.say(player, "you must have a - somewhere in the name to distinguish Fake-You from real players (for instance is-steve-afk)");
             return 0;
         }
         FakePlayerInfo fakePlayerInfo = FakeAFK.instance.getFakePlayerInfo(context.getSource().getPlayer());
         if (fakePlayerInfo == null) return 0;
         fakePlayerInfo.setName(name);
-        FakeAFK.instance.say(player, "Fake You is now called "+name);
+        FakeAFK.instance.say(player, "Fake-You has been renamed to "+name);
         return 1;
     }
 
     private static int help(CommandContext<ServerCommandSource> context) {
-        FakeAFK.instance.say(context.getSource().getPlayer(), "use /afk:name <name> to rename Fake You");
+        ServerPlayerEntity player = context.getSource().getPlayer();
+        FakePlayerInfo fakePlayerInfo = FakeAFK.instance.getFakePlayerInfo(player);
+        if (fakePlayerInfo == null) return 0;
+        FakeAFK.instance.say(player, "Fake-You is currently called "+fakePlayerInfo.getName()+"\nuse /afk:name <name> to rename them");
         return 1;
     }
 }

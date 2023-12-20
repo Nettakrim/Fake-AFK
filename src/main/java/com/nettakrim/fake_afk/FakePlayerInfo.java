@@ -74,8 +74,13 @@ public class FakePlayerInfo {
     private int despawnInTicks;
 
     public void readyForDisconnect() {
-        this.ready = true;
-        FakeAFK.instance.say(player, "Fake You will appear when and where you leave");
+        if (ready) {
+            ready = false;
+            FakeAFK.instance.say(player, "Fake-You will no longer be summoned");
+        } else {
+            ready = true;
+            FakeAFK.instance.say(player, "Fake-You will be summoned when and where you leave the server, run the command again to cancel");
+        }
     }
 
     public void updatePlayer(ServerPlayerEntity player) {
@@ -85,11 +90,11 @@ public class FakePlayerInfo {
     public void realPlayerJoin() {
         long current = System.currentTimeMillis();
         if (diedAt > 0) {
-            FakeAFK.instance.say(player, "Fake You died while you were AFK "+getTimeText(current-diedAt)+" ago, after "+getTimeText(diedAt-spawnedAt)+" of AFKing");
+            FakeAFK.instance.say(player, "Fake-You died while you were AFK "+getTimeText(current-diedAt)+" ago, after "+getTimeText(diedAt-spawnedAt)+" of AFKing");
             diedAt = -1L;
         } else if (spawnedAt > 0) {
             killFakePlayer();
-            FakeAFK.instance.say(player, "Fake You was AFKing for "+getTimeText(current-spawnedAt));
+            FakeAFK.instance.say(player, "Fake-You was AFKing for "+getTimeText(current-spawnedAt));
         }
     }
 
@@ -127,10 +132,10 @@ public class FakePlayerInfo {
         if (getFakePlayer() == null) {
             spawnFakePlayer();
             despawnInTicks = 6000;
-            FakeAFK.instance.say(player, "Fake You has been summoned for 5 Minutes, run the command again to dispel them earlier");
+            FakeAFK.instance.say(player, "Fake-You has been summoned for 5 Minutes, run the command again to dispel them earlier");
         } else {
             killFakePlayer();
-            FakeAFK.instance.say(player, "Fake You has been dispelled");
+            FakeAFK.instance.say(player, "Fake-You has been dispelled");
         }
     }
 
@@ -168,7 +173,11 @@ public class FakePlayerInfo {
         this.name = name;
     }
 
-    public String loadName(ServerPlayerEntity player) {
+    public String getName() {
+        return name;
+    }
+
+    private String loadName(ServerPlayerEntity player) {
         String saved = playerNames.get(uuid);
         if (saved != null) {
             return saved;
