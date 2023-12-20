@@ -3,7 +3,7 @@
 	"id": "fake-afk",
 	"version": "${version}",
 	"name": "Fake AFK",
-	"description": "",
+	"description": "Allow anyone to AFK overnight by using Fake Players from Carpet Mod!",
 	"authors": [
 		"Nettakrim"
 	],
