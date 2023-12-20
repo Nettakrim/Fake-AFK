@@ -10,14 +10,14 @@ public class FakePlayerInfo {
     public FakePlayerInfo(ServerPlayerEntity player) {
         this.player = player;
         this.uuid = player.getUuid();
-        this.name = getName(player);
+        this.name = loadName(player);
         this.diedAt = -1L;
         this.spawnedAt = -1L;
         this.despawnInTicks = -1L;
     }
 
     private ServerPlayerEntity player;
-    public final UUID uuid;
+    private final UUID uuid;
     private String name;
 
     private long diedAt;
@@ -93,10 +93,6 @@ public class FakePlayerInfo {
         server.getCommandManager().executeWithPrefix(source, command);
     }
 
-    public static String getName(ServerPlayerEntity player) {
-        return (player.getNameForScoreboard()+"-afk").toLowerCase();
-    }
-
     private void resetVelocity() {
         ServerPlayerEntity fakePlayer = getFakePlayer();
         if (fakePlayer == null) return;
@@ -120,8 +116,16 @@ public class FakePlayerInfo {
         return s.substring(0,s.length()-1);
     }
 
-    public String getFakeName() {
-        return name;
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String loadName(ServerPlayerEntity player) {
+        return (player.getNameForScoreboard()+"-afk").toLowerCase();
+    }
+
+    public boolean uuidEquals(UUID other) {
+        return uuid.equals(other);
     }
 
     public void tick() {

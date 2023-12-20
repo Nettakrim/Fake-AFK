@@ -19,12 +19,10 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 public class FakeAFK implements ModInitializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger("fake-afk");
 	public static FakeAFK instance;
+    private static final Logger LOGGER = LoggerFactory.getLogger("fake-afk");
 
-	public FakeAFKCommands commands;
-
-	public ArrayList<FakePlayerInfo> fakePlayers;
+	private ArrayList<FakePlayerInfo> fakePlayers;
 
 	private final TextColor textColor = TextColor.fromRgb(0xAAAAAA);
 	private final TextColor nameTextColor = TextColor.fromRgb(0xF07F1D);
@@ -34,26 +32,11 @@ public class FakeAFK implements ModInitializer {
 		instance = this;
 		fakePlayers = new ArrayList<>();
 
-		commands = new FakeAFKCommands();
+		new FakeAFKCommands();
 
 		ServerPlayConnectionEvents.DISCONNECT.register(this::onDisconnect);
 		ServerPlayConnectionEvents.JOIN.register(this::onConnect);
 		ServerTickEvents.START_SERVER_TICK.register(this::tick);
-	}
-
-	public boolean readyPlayer(ServerPlayerEntity player) {
-		FakePlayerInfo fakePlayerInfo = getFakePlayerInfo(player);
-		if (fakePlayerInfo == null) return false;
-		fakePlayerInfo.readyForDisconnect();
-		fakePlayers.add(fakePlayerInfo);
-		return true;
-	}
-
-	public void summonPlayer(ServerPlayerEntity player) {
-		FakePlayerInfo info = getFakePlayerInfo(player);
-		if (info != null) {
-			info.toggleSummon();
-		}
 	}
 
 	private void onDisconnect(ServerPlayNetworkHandler handler, MinecraftServer server) {
@@ -92,7 +75,7 @@ public class FakeAFK implements ModInitializer {
 		if (player == null) return null;
 		UUID uuid = player.getUuid();
 		for (FakePlayerInfo info : fakePlayers) {
-			if (info.uuid.equals(uuid)) {
+			if (info.uuidEquals(uuid)) {
 				return info;
 			}
 		}

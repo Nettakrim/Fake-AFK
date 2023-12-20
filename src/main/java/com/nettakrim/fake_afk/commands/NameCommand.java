@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.nettakrim.fake_afk.FakeAFK;
+import com.nettakrim.fake_afk.FakePlayerInfo;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -30,6 +31,9 @@ public class NameCommand implements Command<ServerCommandSource> {
             FakeAFK.instance.say(player, "you must have a - somewhere in the name to distinguish Fake You from real players (for instance is-steve-afk)");
             return 0;
         }
+        FakePlayerInfo fakePlayerInfo = FakeAFK.instance.getFakePlayerInfo(context.getSource().getPlayer());
+        if (fakePlayerInfo == null) return 0;
+        fakePlayerInfo.setName(name);
         FakeAFK.instance.say(player, "Fake You is now called "+name);
         return 1;
     }

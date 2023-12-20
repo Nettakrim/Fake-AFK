@@ -5,6 +5,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.nettakrim.fake_afk.FakeAFK;
+import com.nettakrim.fake_afk.FakePlayerInfo;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 
@@ -18,7 +19,10 @@ public class SummonCommand implements Command<ServerCommandSource> {
 
     @Override
     public int run(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        FakeAFK.instance.summonPlayer(context.getSource().getPlayer());
+        FakePlayerInfo info = FakeAFK.instance.getFakePlayerInfo(context.getSource().getPlayer());
+        if (info != null) {
+            info.toggleSummon();
+        }
         return 1;
     }
 }
