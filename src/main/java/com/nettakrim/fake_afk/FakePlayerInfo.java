@@ -90,7 +90,7 @@ public class FakePlayerInfo {
     public void realPlayerJoin() {
         long current = System.currentTimeMillis();
         if (diedAt > 0) {
-            FakeAFK.instance.say(player, "Fake-You died while you were AFK "+getTimeText(current-diedAt)+" ago, after "+getTimeText(diedAt-spawnedAt)+" of AFKing");
+            FakeAFK.instance.say(player, "Fake-You died while you were offline "+getTimeText(current-diedAt)+" ago, after "+getTimeText(diedAt-spawnedAt)+" of AFKing");
             diedAt = -1L;
         } else if (spawnedAt > 0) {
             killFakePlayer();
@@ -119,6 +119,7 @@ public class FakePlayerInfo {
     public void spawnFakePlayer() {
         runCommand("player "+name+" spawn in adventure");
         spawnedAt = System.currentTimeMillis();
+        diedAt = -1;
     }
 
     public void tryLogFakeDeath(String name) {
