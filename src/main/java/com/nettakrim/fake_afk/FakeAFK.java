@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 public class FakeAFK implements ModInitializer {
-    public static final Logger LOGGER = LoggerFactory.getLogger("fake-afk");
+    private static final Logger LOGGER = LoggerFactory.getLogger("fake-afk");
 	public static FakeAFK instance;
 
 	public FakeAFKCommands commands;
@@ -77,11 +77,7 @@ public class FakeAFK implements ModInitializer {
 
 		//filter out fake players, this isnt needed on disconnect as that method doesn't trigger for fake players
 		String name = player.getNameForScoreboard();
-		for (FakePlayerInfo fakePlayerInfo : fakePlayers) {
-			if (fakePlayerInfo.getFakeName().equalsIgnoreCase(name)) {
-				return;
-			}
-		}
+		if (name.contains("-")) return;
 
 		if (info != null) {
 			info.updatePlayer(player);
@@ -113,5 +109,9 @@ public class FakeAFK implements ModInitializer {
 		for (FakePlayerInfo info : fakePlayers) {
 			info.tick();
 		}
+	}
+
+	public static void info(String s) {
+		LOGGER.info(s);
 	}
 }

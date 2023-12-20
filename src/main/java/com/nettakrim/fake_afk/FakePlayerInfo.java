@@ -94,7 +94,7 @@ public class FakePlayerInfo {
     }
 
     public static String getName(ServerPlayerEntity player) {
-        return (player.getNameForScoreboard()+"_afk").toLowerCase();
+        return (player.getNameForScoreboard()+"-afk").toLowerCase();
     }
 
     private void resetVelocity() {
