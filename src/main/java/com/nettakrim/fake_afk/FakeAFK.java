@@ -3,6 +3,7 @@ package com.nettakrim.fake_afk;
 import com.nettakrim.fake_afk.commands.FakeAFKCommands;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
@@ -37,14 +38,22 @@ public class FakeAFK implements ModInitializer {
 
 		ServerPlayConnectionEvents.DISCONNECT.register(this::onDisconnect);
 		ServerPlayConnectionEvents.JOIN.register(this::onConnect);
+		ServerTickEvents.START_SERVER_TICK.register(this::tick);
 	}
 
 	public boolean readyPlayer(ServerPlayerEntity player) {
-		if (player == null || getFakePlayerInfo(player) != null) return false;
-		FakePlayerInfo fakePlayerInfo = new FakePlayerInfo(player);
+		FakePlayerInfo fakePlayerInfo = getFakePlayerInfo(player);
+		if (fakePlayerInfo == null) return false;
 		fakePlayerInfo.readyForDisconnect();
 		fakePlayers.add(fakePlayerInfo);
 		return true;
+	}
+
+	public void summonPlayer(ServerPlayerEntity player) {
+		FakePlayerInfo info = getFakePlayerInfo(player);
+		if (info != null) {
+			info.toggleSummon();
+		}
 	}
 
 	private void onDisconnect(ServerPlayNetworkHandler handler, MinecraftServer server) {
@@ -65,14 +74,26 @@ public class FakeAFK implements ModInitializer {
 	private void onConnect(ServerPlayNetworkHandler handler, PacketSender packetSender, MinecraftServer server) {
 		ServerPlayerEntity player = handler.getPlayer();
 		FakePlayerInfo info = getFakePlayerInfo(player);
+
+		//filter out fake players, this isnt needed on disconnect as that method doesn't trigger for fake players
+		String name = player.getNameForScoreboard();
+		for (FakePlayerInfo fakePlayerInfo : fakePlayers) {
+			if (fakePlayerInfo.getFakeName().equalsIgnoreCase(name)) {
+				return;
+			}
+		}
+
 		if (info != null) {
-			fakePlayers.remove(info);
 			info.updatePlayer(player);
 			info.realPlayerJoin();
+		} else {
+			info = new FakePlayerInfo(player);
+			fakePlayers.add(info);
 		}
 	}
 
 	public FakePlayerInfo getFakePlayerInfo(ServerPlayerEntity player) {
+		if (player == null) return null;
 		UUID uuid = player.getUuid();
 		for (FakePlayerInfo info : fakePlayers) {
 			if (info.uuid.equals(uuid)) {
@@ -86,5 +107,11 @@ public class FakeAFK implements ModInitializer {
 		if (player == null) return;
 		Text text = Text.literal("[Fake AFK] ").setStyle(Style.EMPTY.withColor(nameTextColor)).append(Text.literal(message.formatted(args)).setStyle(Style.EMPTY.withColor(textColor)));
 		player.sendMessage(text);
+	}
+
+	public void tick(MinecraftServer server) {
+		for (FakePlayerInfo info : fakePlayers) {
+			info.tick();
+		}
 	}
 }

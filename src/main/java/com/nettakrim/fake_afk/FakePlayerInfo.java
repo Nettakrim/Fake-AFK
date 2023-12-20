@@ -12,16 +12,19 @@ public class FakePlayerInfo {
         this.uuid = player.getUuid();
         this.name = getName(player);
         this.diedAt = -1L;
+        this.spawnedAt = -1L;
+        this.despawnInTicks = -1L;
     }
 
     private ServerPlayerEntity player;
     public final UUID uuid;
-    private final String name;
+    private String name;
 
-    private Long diedAt;
-    private Long spawnedAt;
+    private long diedAt;
+    private long spawnedAt;
 
     private boolean ready;
+    private long despawnInTicks;
 
     public void readyForDisconnect() {
         this.ready = true;
@@ -33,20 +36,31 @@ public class FakePlayerInfo {
     }
 
     public void realPlayerJoin() {
-        Long current = System.currentTimeMillis();
+        long current = System.currentTimeMillis();
         if (diedAt > 0) {
             FakeAFK.instance.say(player, "Fake You died while you were AFK "+getTimeText(current-diedAt)+" ago, after "+getTimeText(diedAt-spawnedAt)+" of AFKing");
             diedAt = -1L;
         } else {
-            resetVelocity();
-            runCommand("player "+name+" kill");
+            killFakePlayer();
             FakeAFK.instance.say(player, "Fake You was AFKing for "+getTimeText(current-spawnedAt));
         }
     }
 
+    private void killFakePlayer() {
+        resetVelocity();
+        runCommand("player "+name+" kill");
+    }
+
     public void realPlayerDisconnect() {
         if (ready) {
-            spawnFakePlayer();
+            despawnInTicks = -1L;
+            ServerPlayerEntity fakePlayer = getFakePlayer();
+            if (fakePlayer != null) {
+                fakePlayer.teleport(player.getServerWorld(), player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch());
+            } else {
+                spawnFakePlayer();
+            }
+            ready = false;
         }
     }
 
@@ -56,10 +70,20 @@ public class FakePlayerInfo {
     }
 
     public void deathTest(String name) {
-        FakeAFK.LOGGER.info("death test "+name);
         if (this.name.equals(name)) {
             resetVelocity();
             diedAt = System.currentTimeMillis();
+        }
+    }
+
+    public void toggleSummon() {
+        if (getFakePlayer() == null) {
+            spawnFakePlayer();
+            despawnInTicks = 6000;
+            FakeAFK.instance.say(player, "Fake You has been summoned for 5 Minutes, run the command again to dispel them earlier");
+        } else {
+            killFakePlayer();
+            FakeAFK.instance.say(player, "Fake You has been dispelled");
         }
     }
 
@@ -74,11 +98,15 @@ public class FakePlayerInfo {
     }
 
     private void resetVelocity() {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerPlayerEntity fakePlayer = server.getPlayerManager().getPlayer(name);
+        ServerPlayerEntity fakePlayer = getFakePlayer();
         if (fakePlayer == null) return;
         fakePlayer.setVelocity(0,0,0);
+    }
+
+    private ServerPlayerEntity getFakePlayer() {
+        MinecraftServer server = player.getServer();
+        if (server == null) return null;
+        return server.getPlayerManager().getPlayer(name);
     }
 
     private String getTimeText(Long timeMillis) {
@@ -90,5 +118,19 @@ public class FakePlayerInfo {
         if (minutes > 0) s.append(minutes%60L).append(minutes == 1 ? " minute " : " minutes ");
         if (minutes < 15) s.append(seconds%60L).append(seconds == 1 ? " second " : " seconds ");
         return s.substring(0,s.length()-1);
+    }
+
+    public String getFakeName() {
+        return name;
+    }
+
+    public void tick() {
+        if (despawnInTicks > 0L) {
+            despawnInTicks--;
+            if (despawnInTicks == 0L) {
+                killFakePlayer();
+                despawnInTicks = -1L;
+            }
+        }
     }
 }
