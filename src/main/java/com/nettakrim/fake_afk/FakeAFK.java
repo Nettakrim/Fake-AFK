@@ -3,6 +3,7 @@ package com.nettakrim.fake_afk;
 import com.nettakrim.fake_afk.commands.FakeAFKCommands;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -36,7 +37,14 @@ public class FakeAFK implements ModInitializer {
 
 		ServerPlayConnectionEvents.DISCONNECT.register(this::onDisconnect);
 		ServerPlayConnectionEvents.JOIN.register(this::onConnect);
-		ServerTickEvents.START_SERVER_TICK.register(this::tick);
+		ServerLifecycleEvents.SERVER_STOPPED.register(this::onServerClose);
+		ServerTickEvents.START_SERVER_TICK.register(this::onTick);
+
+		FakePlayerInfo.LoadPlayerNames();
+	}
+
+	private void onServerClose(MinecraftServer server) {
+		FakePlayerInfo.SavePlayerNames();
 	}
 
 	private void onDisconnect(ServerPlayNetworkHandler handler, MinecraftServer server) {
@@ -44,13 +52,6 @@ public class FakeAFK implements ModInitializer {
 		FakePlayerInfo info = getFakePlayerInfo(player);
 		if (info != null) {
 			info.realPlayerDisconnect();
-		}
-	}
-
-	public void deathTest(ServerPlayerEntity player) {
-		String name = player.getNameForScoreboard();
-		for (FakePlayerInfo fakePlayerInfo : fakePlayers) {
-			fakePlayerInfo.deathTest(name);
 		}
 	}
 
@@ -71,6 +72,14 @@ public class FakeAFK implements ModInitializer {
 		}
 	}
 
+	public void logFakeDeath(ServerPlayerEntity player) {
+		String name = player.getNameForScoreboard();
+		if (!name.contains("-")) return;
+		for (FakePlayerInfo fakePlayerInfo : fakePlayers) {
+			fakePlayerInfo.tryLogFakeDeath(name);
+		}
+	}
+
 	public FakePlayerInfo getFakePlayerInfo(ServerPlayerEntity player) {
 		if (player == null) return null;
 		UUID uuid = player.getUuid();
@@ -88,7 +97,7 @@ public class FakeAFK implements ModInitializer {
 		player.sendMessage(text);
 	}
 
-	public void tick(MinecraftServer server) {
+	public void onTick(MinecraftServer server) {
 		for (FakePlayerInfo info : fakePlayers) {
 			info.tick();
 		}

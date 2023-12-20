@@ -1,9 +1,16 @@
 package com.nettakrim.fake_afk;
 
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
 import java.util.UUID;
 
 public class FakePlayerInfo {
@@ -13,7 +20,47 @@ public class FakePlayerInfo {
         this.name = loadName(player);
         this.diedAt = -1L;
         this.spawnedAt = -1L;
-        this.despawnInTicks = -1L;
+        this.despawnInTicks = -1;
+    }
+
+    private static final HashMap<UUID, String> playerNames = new HashMap<>();
+
+    private static File data = null;
+
+    public static void LoadPlayerNames() {
+        ResolveDataFile();
+        try {
+            data.createNewFile();
+            Scanner scanner = new Scanner(data);
+            while (scanner.hasNextLine()) {
+                String s = scanner.nextLine();
+                String[] halves = s.split(" ");
+                playerNames.put(UUID.fromString(halves[0]), halves[1]);
+            }
+            scanner.close();
+        } catch (IOException e) {
+            FakeAFK.info("Failed to load data");
+        }
+    }
+
+    public static void SavePlayerNames() {
+        ResolveDataFile();
+        try {
+            StringBuilder s = new StringBuilder();
+            for (Map.Entry<UUID, String> entry : playerNames.entrySet()) {
+                s.append(entry.getKey()).append(' ').append(entry.getValue()).append('\n');
+            }
+            FileWriter writer = new FileWriter(data);
+            writer.write(s.toString());
+            writer.close();
+        } catch (IOException e) {
+            FakeAFK.info("Failed to save data");
+        }
+    }
+
+    private static void ResolveDataFile() {
+        if (data != null) return;
+        data = FabricLoader.getInstance().getConfigDir().resolve("fake_afk.txt").toFile();
     }
 
     private ServerPlayerEntity player;
@@ -24,7 +71,7 @@ public class FakePlayerInfo {
     private long spawnedAt;
 
     private boolean ready;
-    private long despawnInTicks;
+    private int despawnInTicks;
 
     public void readyForDisconnect() {
         this.ready = true;
@@ -40,7 +87,7 @@ public class FakePlayerInfo {
         if (diedAt > 0) {
             FakeAFK.instance.say(player, "Fake You died while you were AFK "+getTimeText(current-diedAt)+" ago, after "+getTimeText(diedAt-spawnedAt)+" of AFKing");
             diedAt = -1L;
-        } else {
+        } else if (spawnedAt > 0) {
             killFakePlayer();
             FakeAFK.instance.say(player, "Fake You was AFKing for "+getTimeText(current-spawnedAt));
         }
@@ -53,7 +100,7 @@ public class FakePlayerInfo {
 
     public void realPlayerDisconnect() {
         if (ready) {
-            despawnInTicks = -1L;
+            despawnInTicks = -1;
             ServerPlayerEntity fakePlayer = getFakePlayer();
             if (fakePlayer != null) {
                 fakePlayer.teleport(player.getServerWorld(), player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch());
@@ -69,7 +116,7 @@ public class FakePlayerInfo {
         spawnedAt = System.currentTimeMillis();
     }
 
-    public void deathTest(String name) {
+    public void tryLogFakeDeath(String name) {
         if (this.name.equals(name)) {
             resetVelocity();
             diedAt = System.currentTimeMillis();
@@ -117,10 +164,15 @@ public class FakePlayerInfo {
     }
 
     public void setName(String name) {
+        playerNames.put(uuid, name);
         this.name = name;
     }
 
     public String loadName(ServerPlayerEntity player) {
+        String saved = playerNames.get(uuid);
+        if (saved != null) {
+            return saved;
+        }
         return (player.getNameForScoreboard()+"-afk").toLowerCase();
     }
 
@@ -129,11 +181,11 @@ public class FakePlayerInfo {
     }
 
     public void tick() {
-        if (despawnInTicks > 0L) {
+        if (despawnInTicks > 0) {
             despawnInTicks--;
-            if (despawnInTicks == 0L) {
+            if (despawnInTicks == 0) {
                 killFakePlayer();
-                despawnInTicks = -1L;
+                despawnInTicks = -1;
             }
         }
     }

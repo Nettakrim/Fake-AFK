@@ -12,6 +12,6 @@ public class ServerPlayerEntityMixin {
     @Inject(at = @At("HEAD"), method = "onDisconnect")
     private void onDisconnect(CallbackInfo ci) {
         //regular disconnect listener doesn't trigger for fake players
-        FakeAFK.instance.deathTest((ServerPlayerEntity)(Object)this);
+        FakeAFK.instance.logFakeDeath((ServerPlayerEntity)(Object)this);
     }
 }
