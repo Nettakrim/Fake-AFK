@@ -79,7 +79,7 @@ public class FakePlayerInfo {
             FakeAFK.instance.say(player, "Fake-You will no longer be summoned");
         } else {
             ready = true;
-            FakeAFK.instance.say(player, "Fake-You will be summoned when and where you leave the server, run the command again to cancel");
+            FakeAFK.instance.say(player, "Fake-You will be summoned wherever you are once you leave the server, run the command again to cancel");
         }
     }
 
