@@ -1,18 +1,11 @@
 package com.nettakrim.fake_afk;
 
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.context.CommandContext;
 import com.nettakrim.fake_afk.commands.FakeAFKCommands;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.command.CommandSource;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.slf4j.Logger;
@@ -55,20 +48,27 @@ public class FakeAFK implements ModInitializer {
 		}
 	}
 
+	public void deathTest(ServerPlayerEntity player) {
+		String name = player.getNameForScoreboard();
+		for (FakePlayerInfo fakePlayerInfo : fakePlayers) {
+			fakePlayerInfo.deathTest(name);
+		}
+	}
+
 	private void onConnect(ServerPlayNetworkHandler handler, PacketSender packetSender, MinecraftServer server) {
 		ServerPlayerEntity player = handler.getPlayer();
 		FakePlayerInfo info = getFakePlayerInfo(player);
 		if (info != null) {
-			info.updatePlayer(player);
-			info.killFakePlayer();
 			fakePlayers.remove(info);
+			info.updatePlayer(player);
+			info.realPlayerJoin();
 		}
 	}
 
 	public FakePlayerInfo getFakePlayerInfo(ServerPlayerEntity player) {
 		UUID uuid = player.getUuid();
 		for (FakePlayerInfo info : fakePlayers) {
-			if (info.uuid == uuid) {
+			if (info.uuid.equals(uuid)) {
 				return info;
 			}
 		}
