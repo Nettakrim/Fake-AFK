@@ -169,9 +169,23 @@ public class FakePlayerInfo {
         return s.substring(0,s.length()-1);
     }
 
-    public void setName(String name) {
+    public boolean setName(String name) {
+        name = name.toLowerCase();
+        if (name.equalsIgnoreCase(playerNames.get(uuid))) {
+            return true;
+        }
+
+        //disallow names that are already taken
+        for (String s : playerNames.values()) {
+            if (name.equals(s)) return false;
+        }
+        //disallow steve naming themselves alex-afk, since that's alex's reserved name, steve can do alex--afk, or afk-alex etc and they can also do steve-afk
+        if (name.endsWith("-afk") && name.substring(name.indexOf('-')).length() <= 4 && !name.equalsIgnoreCase(player.getNameForScoreboard()+"-afk")) {
+            return false;
+        }
         playerNames.put(uuid, name);
         this.name = name;
+        return true;
     }
 
     public String getName() {

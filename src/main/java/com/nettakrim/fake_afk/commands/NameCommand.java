@@ -27,15 +27,19 @@ public class NameCommand implements Command<ServerCommandSource> {
     public int run(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayer();
         String name = StringArgumentType.getString(context, "name");
-        if (!name.contains("-")) {
+        //admins can bypass the - requirement
+        if (!(name.contains("-") || context.getSource().hasPermissionLevel(3))) {
             FakeAFK.instance.say(player, "you must have a - somewhere in the name to distinguish Fake-You from real players (for instance is-steve-afk)");
             return 0;
         }
         FakePlayerInfo fakePlayerInfo = FakeAFK.instance.getFakePlayerInfo(context.getSource().getPlayer());
         if (fakePlayerInfo == null) return 0;
-        fakePlayerInfo.setName(name);
-        FakeAFK.instance.say(player, "Fake-You has been renamed to "+name);
-        return 1;
+        if (fakePlayerInfo.setName(name)) {
+            FakeAFK.instance.say(player, "Fake-You has been renamed to "+name.toLowerCase());
+            return 1;
+        }
+        FakeAFK.instance.say(player, name+" is already taken, or the name is otherwise reserved");
+        return 0;
     }
 
     private static int help(CommandContext<ServerCommandSource> context) {
