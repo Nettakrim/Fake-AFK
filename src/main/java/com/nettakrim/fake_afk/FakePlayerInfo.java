@@ -25,15 +25,19 @@ public class FakePlayerInfo {
     private static final HashMap<UUID, String> playerNames = new HashMap<>();
 
     public static void LoadPlayerNames(PeekableScanner scanner) {
+        boolean ready = false;
         while (scanner.hasNextLine()) {
             String s = scanner.nextLine();
-            String[] halves = s.split(" ");
-            playerNames.put(UUID.fromString(halves[0]), halves[1]);
+            if (ready) {
+                String[] halves = s.split(" ");
+                playerNames.put(UUID.fromString(halves[0]), halves[1]);
+            }
+            if (s.equals("names:")) ready = true;
         }
     }
 
     public static String SavePlayerNames() {
-        StringBuilder s = new StringBuilder();
+        StringBuilder s = new StringBuilder("names:\n");
         for (Map.Entry<UUID, String> entry : playerNames.entrySet()) {
             s.append(entry.getKey()).append(' ').append(entry.getValue()).append('\n');
         }

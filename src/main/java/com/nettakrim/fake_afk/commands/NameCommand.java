@@ -28,8 +28,7 @@ public class NameCommand implements Command<ServerCommandSource> {
     public int run(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayer();
         String name = StringArgumentType.getString(context, "name");
-        //admins can bypass the - requirement
-        if (!(name.contains("-") || context.getSource().hasPermissionLevel(3))) {
+        if (!(name.contains("-") || context.getSource().hasPermissionLevel(FakeAFKCommands.allowRealNamesPermissionLevel))) {
             FakeAFK.instance.say(player, "you must have a - somewhere in the name to distinguish Fake-You from real players (for instance is-steve-afk)");
             return 0;
         }

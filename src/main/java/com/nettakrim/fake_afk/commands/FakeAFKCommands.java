@@ -16,27 +16,29 @@ public class FakeAFKCommands {
         });
     }
 
-    public static int namePermissionLevel;
-    public static int readyPermissionLevel;
-    public static int summonPermissionLevel;
+    public static int namePermissionLevel = 0;
+    public static int readyPermissionLevel = 0;
+    public static int summonPermissionLevel = 0;
+    public static int allowRealNamesPermissionLevel = 3;
 
     public void loadPermissions(PeekableScanner scanner) {
         while (scanner.hasNextLine()) {
             String s = scanner.peek();
-            if (!s.contains(":")) {
+            if (!s.contains(": ")) {
                 return;
             }
             String[] halves = s.split(": ");
-            int value = 0;
+            int value = -1;
             try {
                 value = Integer.parseInt(halves[1]);
             } catch (Exception ignored) {
 
             }
             switch (halves[0]) {
-                case "name_permission_level" -> namePermissionLevel = value;
-                case "ready_permission_level" -> readyPermissionLevel = value;
-                case "summon_permission_level" -> summonPermissionLevel = value;
+                case "name_permission_level" -> namePermissionLevel = value == -1 ? namePermissionLevel : value;
+                case "ready_permission_level" -> readyPermissionLevel = value == -1 ? readyPermissionLevel : value;
+                case "summon_permission_level" -> summonPermissionLevel = value == -1 ? summonPermissionLevel : value;
+                case "allow_real_names_permission_level" -> allowRealNamesPermissionLevel = value == -1 ? allowRealNamesPermissionLevel : value;
                 default -> {
                     return;
                 }
@@ -46,10 +48,9 @@ public class FakeAFKCommands {
     }
 
     public String savePermissions() {
-        StringBuilder s = new StringBuilder();
-        s.append("name_permission_level: ").append(namePermissionLevel).append("\n");
-        s.append("ready_permission_level: ").append(readyPermissionLevel).append("\n");
-        s.append("summon_permission_level: ").append(summonPermissionLevel).append("\n");
-        return s.toString();
+        return "name_permission_level: " + namePermissionLevel + "\n" +
+               "ready_permission_level: " + readyPermissionLevel + "\n" +
+               "summon_permission_level: " + summonPermissionLevel + "\n" +
+               "allow_real_names_permission_level: " + allowRealNamesPermissionLevel + "\n";
     }
 }
