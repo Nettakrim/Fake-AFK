@@ -20,6 +20,10 @@ name_permission_level: 0             | permission level needed for /afk:name to 
 ready_permission_level: 0            | permission level needed for /afk:ready to be usable
 summon_permission_level: 0           | permission level needed for /afk:summon to be usable
 allow_real_names_permission_level: 3 | permission level needed for /afk:name to allow names without -
+mspt_kick_limit: -1                  | kicks afk players if the server's mspt goes above the limit, by default minecraft aims for 50mspt (-1 for disabled)
+mspt_kick_type: 1                    | 1 - kick player whose been fake afk the longest, 2 - kick all fake afk players
+max_afk_limit: -1                    | max number of people who can be fake afk at once
+max_afk_type: 1                      | 1 - kick player whose been fake afk the longest, 2 - dont allow more fake afk players
 max_afk_ticks: -1                    | max time in ticks people can fake afk for, -1 is unlimited
 max_summon_ticks: 6000               | max time in ticks people can /afk:summon their fake players for, -1 is unlimited
 names:                               | list of what people have named their fake players:
@@ -31,6 +35,6 @@ For reference, this is what the permission levels are:
 
 - `ALL = 0` - everyone
 - `MODERATORS = 1` - people who can build in spawn chunks
-- `GAMEMASTERS = 2` - people with /gamerule, /fill, /execute, /tp, ... (also command blocks, datapacks etc.)
+- `GAMEMASTERS = 2` - people with /gamerule, /fill, /execute, /tp, ... (also the level command blocks, datapacks etc. have)
 - `ADMINS = 3` - people with /kick, /ban, /op, ...
 - `OWNERS = 4` - people with /stop, /save

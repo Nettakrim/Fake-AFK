@@ -38,10 +38,7 @@ public class FakePlayerInfo {
                 if (s.equals("names:")) ready = true;
                 else if (s.contains(": ")) {
                     String[] halves = s.split(": ");
-                    int value = -2;
-                    try {
-                        value = Integer.parseInt(halves[1]);
-                    } catch (Exception ignored) {}
+                    int value = FakeAFK.parseInt(halves[1], -2);
                     switch (halves[0]) {
                         case "max_afk_ticks" -> maxAFKTicks = value == -2 ? maxAFKTicks : value;
                         case "max_summon_ticks" -> maxSummonTicks = value == -2 ? maxSummonTicks : value;
@@ -72,6 +69,8 @@ public class FakePlayerInfo {
     private boolean ready;
     private int despawnInTicks;
 
+    private boolean afking;
+
     public void readyForDisconnect() {
         if (ready) {
             ready = false;
@@ -100,12 +99,13 @@ public class FakePlayerInfo {
             killFakePlayer();
             FakeAFK.instance.say(player, "Fake-You was AFKing for "+getTimeText(current-spawnedAt));
         }
+        afking = false;
     }
 
-    private void killFakePlayer() {
+    public void killFakePlayer() {
         ServerPlayerEntity fakePlayer = resetVelocity();
-        runCommand("player "+name+" kill");
         if (fakePlayer != null) {
+            runCommand("player "+name+" kill");
             ServerWorld serverWorld = (ServerWorld)fakePlayer.getWorld();
             serverWorld.spawnParticles(ParticleTypes.ENTITY_EFFECT, fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
             serverWorld.playSound(null, fakePlayer.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE.value(), SoundCategory.PLAYERS, 1, 1);
@@ -121,6 +121,7 @@ public class FakePlayerInfo {
             } else {
                 spawnFakePlayer();
             }
+            afking = true;
             ready = false;
         }
     }
@@ -138,6 +139,7 @@ public class FakePlayerInfo {
         if (this.name.equals(name)) {
             resetVelocity();
             diedAt = System.currentTimeMillis();
+            afking = false;
         }
     }
 
@@ -153,6 +155,7 @@ public class FakePlayerInfo {
     }
 
     private void runCommand(String command) {
+        //PlayerEntity playerEntity = player == null ? getFakePlayer() : player;
         ServerCommandSource source = player.getCommandSource().withLevel(5);
         MinecraftServer server = player.getServer();
         server.getCommandManager().executeWithPrefix(source, command);
@@ -226,5 +229,13 @@ public class FakePlayerInfo {
                 despawnInTicks = -1;
             }
         }
+    }
+
+    public double getAFKTime(double currentTime) {
+        return afking ? currentTime-spawnedAt : -1.0;
+    }
+
+    public boolean isAFKing() {
+        return afking;
     }
 }

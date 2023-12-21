@@ -1,6 +1,7 @@
 package com.nettakrim.fake_afk.commands;
 
 import com.mojang.brigadier.tree.RootCommandNode;
+import com.nettakrim.fake_afk.FakeAFK;
 import com.nettakrim.fake_afk.PeekableScanner;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.ServerCommandSource;
@@ -28,10 +29,7 @@ public class FakeAFKCommands {
                 return;
             }
             String[] halves = s.split(": ");
-            int value = -1;
-            try {
-                value = Integer.parseInt(halves[1]);
-            } catch (Exception ignored) {}
+            int value = FakeAFK.parseInt(halves[1], -1);
             switch (halves[0]) {
                 case "name_permission_level" -> namePermissionLevel = value == -1 ? namePermissionLevel : value;
                 case "ready_permission_level" -> readyPermissionLevel = value == -1 ? readyPermissionLevel : value;
