@@ -80,7 +80,7 @@ public class FakePlayerInfo {
             ready = true;
             String s = "Fake-You will be summoned wherever you are once you leave the server";
             if (maxAFKTicks > 0) {
-                s+=", disconnecting automatically after "+getTimeText(50L*maxAFKTicks);
+                s+=", dispelling automatically after "+getTimeText(50L*maxAFKTicks);
             }
             s+=", run the command again to cancel";
             FakeAFK.instance.say(player, s);
