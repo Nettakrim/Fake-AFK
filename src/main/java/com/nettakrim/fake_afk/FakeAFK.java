@@ -55,7 +55,10 @@ public class FakeAFK implements ModInitializer {
 
 	public void say(MinecraftServer server, String message, Object... args) {
 		if (server == null) return;
-		server.sendMessage(formatText(message, args));
+		Text text = formatText(message, args);
+		for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+			player.sendMessage(text);
+		}
 	}
 
 	private Text formatText(String message, Object... args) {

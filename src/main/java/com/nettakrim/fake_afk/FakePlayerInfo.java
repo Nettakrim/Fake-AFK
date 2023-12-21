@@ -83,7 +83,14 @@ public class FakePlayerInfo {
             }
             s+=", run the command again to cancel";
             FakeAFK.instance.say(player, s);
+            if (FakeAFK.instance.connection.afkWontSpawnCheck()) {
+                FakeAFK.instance.say(player, "Watch out! The maximum amount of fake players are currently AFKing, so Fake-You might not spawn");
+            }
         }
+    }
+
+    public void cancelReady() {
+        ready = false;
     }
 
     public void updatePlayer(ServerPlayerEntity player) {
@@ -112,7 +119,7 @@ public class FakePlayerInfo {
         }
     }
 
-    public void realPlayerDisconnect() {
+    public boolean realPlayerDisconnect() {
         if (ready) {
             despawnInTicks = maxAFKTicks;
             ServerPlayerEntity fakePlayer = getFakePlayer();
@@ -123,7 +130,9 @@ public class FakePlayerInfo {
             }
             afking = true;
             ready = false;
+            return true;
         }
+        return false;
     }
 
     public void spawnFakePlayer() {

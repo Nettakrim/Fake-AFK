@@ -26,12 +26,12 @@ public class Connection {
                 return;
             }
             String[] halves = s.split(": ");
-            int value = FakeAFK.parseInt(halves[1], -1);
+            int value = FakeAFK.parseInt(halves[1], -2);
             switch (halves[0]) {
-                case "mspt_kick_limit" -> msptKickLimit = value == -1 ? msptKickLimit : value;
-                case "mspt_kick_type" -> msptKickType = value == -1 ? msptKickType : value;
-                case "max_afk_limit" -> maxAFKLimit = value == -1 ? maxAFKLimit : value;
-                case "max_afk_type" -> maxAFKType = value == -1 ? maxAFKType : value;
+                case "mspt_kick_limit" -> msptKickLimit = value == -2 ? msptKickLimit : value;
+                case "mspt_kick_type" -> msptKickType = value == -2 ? msptKickType : value;
+                case "max_afk_limit" -> maxAFKLimit = value == -2 ? maxAFKLimit : value;
+                case "max_afk_type" -> maxAFKType = value == -2 ? maxAFKType : value;
                 default -> {
                     return;
                 }
@@ -51,7 +51,15 @@ public class Connection {
         ServerPlayerEntity player = handler.getPlayer();
         FakePlayerInfo info = FakeAFK.instance.getFakePlayerInfo(player);
         if (info != null) {
-            info.realPlayerDisconnect();
+            boolean atLimit = (maxAFKLimit > 0) && (getTotalAfking() >= maxAFKLimit);
+            if (!atLimit || maxAFKType == 1) {
+                if (info.realPlayerDisconnect() && atLimit) {
+                    FakePlayerInfo oldest = getOldest();
+                    oldest.killFakePlayer();
+                }
+            } else {
+                info.cancelReady();
+            }
         }
     }
 
@@ -97,7 +105,7 @@ public class Connection {
                     FakePlayerInfo oldest = getOldest();
                     if (oldest != null) {
                         oldest.killFakePlayer();
-                        FakeAFK.instance.say(server, "Server is lagging! Dispelling the longest Fake AFK player");
+                        FakeAFK.instance.say(server, "Server is lagging! Dispelling the Fake AFK player whose been AFK the longest");
                     }
                 }
                 else if (msptKickType == 2) {
@@ -128,5 +136,19 @@ public class Connection {
             }
         }
         return oldest;
+    }
+
+    public int getTotalAfking() {
+        int total = 0;
+        for (FakePlayerInfo fakePlayerInfo : FakeAFK.instance.fakePlayers) {
+            if (fakePlayerInfo.isAFKing()) {
+                total++;
+            }
+        }
+        return total;
+    }
+
+    public boolean afkWontSpawnCheck() {
+        return maxAFKLimit > 0 && maxAFKType == 2 && getTotalAfking() >= maxAFKLimit;
     }
 }
