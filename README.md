@@ -16,12 +16,14 @@ The mod only needs to exist server-side, and it requires Carpet Mod to work
 Fake AFK's config and data can be found in `config/fake_afk.txt`, and looks like this:
 
 ```
-name_permission_level: 0                              | permission level needed for /afk:name to be usable
-ready_permission_level: 0                             | permission level needed for /afk:ready to be usable
-summon_permission_level: 0                            | permission level needed for /afk:summon to be usable
-allow_real_names_permission_level: 3                  | permission level needed for /afk:name to allow names without -
-names:                                                | list of what people have named their fake players:
-9c3adf8d-a723-40c9-845b-c6e78c3ac460 nettakrim-is-afk | <uuid> <name>
+name_permission_level: 0             | permission level needed for /afk:name to be usable
+ready_permission_level: 0            | permission level needed for /afk:ready to be usable
+summon_permission_level: 0           | permission level needed for /afk:summon to be usable
+allow_real_names_permission_level: 3 | permission level needed for /afk:name to allow names without -
+max_afk_ticks: -1                    | max time people can fake afk for, -1 is unlimited
+max_summon_ticks: 6000               | max time people can summon their fake players for, -1 is unlimited
+names:                               | list of what people have named their fake players:
+9c3adf8d-a723-... nettakrim-is-afk   | <uuid> <name>
 ...
 ```
 

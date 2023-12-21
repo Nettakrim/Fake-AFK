@@ -31,9 +31,7 @@ public class FakeAFKCommands {
             int value = -1;
             try {
                 value = Integer.parseInt(halves[1]);
-            } catch (Exception ignored) {
-
-            }
+            } catch (Exception ignored) {}
             switch (halves[0]) {
                 case "name_permission_level" -> namePermissionLevel = value == -1 ? namePermissionLevel : value;
                 case "ready_permission_level" -> readyPermissionLevel = value == -1 ? readyPermissionLevel : value;

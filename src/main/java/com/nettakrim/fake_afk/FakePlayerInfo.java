@@ -24,6 +24,9 @@ public class FakePlayerInfo {
 
     private static final HashMap<UUID, String> playerNames = new HashMap<>();
 
+    private static int maxAFKTicks = -1;
+    private static int maxSummonTicks = 6000;
+
     public static void LoadPlayerNames(PeekableScanner scanner) {
         boolean ready = false;
         while (scanner.hasNextLine()) {
@@ -31,13 +34,28 @@ public class FakePlayerInfo {
             if (ready) {
                 String[] halves = s.split(" ");
                 playerNames.put(UUID.fromString(halves[0]), halves[1]);
+            } else {
+                if (s.equals("names:")) ready = true;
+                else if (s.contains(": ")) {
+                    String[] halves = s.split(": ");
+                    int value = -2;
+                    try {
+                        value = Integer.parseInt(halves[1]);
+                    } catch (Exception ignored) {}
+                    switch (halves[0]) {
+                        case "max_afk_ticks" -> maxAFKTicks = value == -2 ? maxAFKTicks : value;
+                        case "max_summon_ticks" -> maxSummonTicks = value == -2 ? maxSummonTicks : value;
+                    }
+                }
             }
-            if (s.equals("names:")) ready = true;
         }
     }
 
     public static String SavePlayerNames() {
-        StringBuilder s = new StringBuilder("names:\n");
+        StringBuilder s = new StringBuilder();
+        s.append("max_afk_ticks: ").append(maxAFKTicks).append("\n");
+        s.append("max_summon_ticks: ").append(maxSummonTicks).append("\n");
+        s.append("names:\n");
         for (Map.Entry<UUID, String> entry : playerNames.entrySet()) {
             s.append(entry.getKey()).append(' ').append(entry.getValue()).append('\n');
         }
@@ -60,7 +78,12 @@ public class FakePlayerInfo {
             FakeAFK.instance.say(player, "Fake-You will no longer be summoned");
         } else {
             ready = true;
-            FakeAFK.instance.say(player, "Fake-You will be summoned wherever you are once you leave the server, run the command again to cancel");
+            String s = "Fake-You will be summoned wherever you are once you leave the server";
+            if (maxAFKTicks > 0) {
+                s+=", disconnecting automatically after "+getTimeText(50L*maxAFKTicks);
+            }
+            s+=", run the command again to cancel";
+            FakeAFK.instance.say(player, s);
         }
     }
 
@@ -91,7 +114,7 @@ public class FakePlayerInfo {
 
     public void realPlayerDisconnect() {
         if (ready) {
-            despawnInTicks = -1;
+            despawnInTicks = maxAFKTicks;
             ServerPlayerEntity fakePlayer = getFakePlayer();
             if (fakePlayer != null) {
                 fakePlayer.teleport(player.getServerWorld(), player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch());
@@ -121,8 +144,8 @@ public class FakePlayerInfo {
     public void toggleSummon() {
         if (getFakePlayer() == null) {
             spawnFakePlayer();
-            despawnInTicks = 6000;
-            FakeAFK.instance.say(player, "Fake-You has been summoned for 5 Minutes, run the command again to dispel them earlier");
+            despawnInTicks = maxSummonTicks;
+            FakeAFK.instance.say(player, "Fake-You has been summoned for "+getTimeText(50L*maxSummonTicks)+", run the command again to dispel them"+(maxSummonTicks == -1 ? "":" earlier"));
         } else {
             killFakePlayer();
             FakeAFK.instance.say(player, "Fake-You has been dispelled");
@@ -149,13 +172,14 @@ public class FakePlayerInfo {
     }
 
     private String getTimeText(Long timeMillis) {
+        if (timeMillis < 0) return "unlimited time";
         StringBuilder s = new StringBuilder();
         long seconds = timeMillis/1000L;
         long minutes = seconds/60L;
         long hours = minutes/60L;
         if (hours > 0) s.append(hours).append(hours == 1 ? " hour " : " hours ");
-        if (minutes > 0) s.append(minutes%60L).append(minutes == 1 ? " minute " : " minutes ");
-        if (minutes < 15) s.append(seconds%60L).append(seconds == 1 ? " second " : " seconds ");
+        if (minutes%60L > 0) s.append(minutes%60L).append(minutes == 1 ? " minute " : " minutes ");
+        if (minutes < 15 && seconds%60L > 0) s.append(seconds%60L).append(seconds == 1 ? " second " : " seconds ");
         return s.substring(0,s.length()-1);
     }
 
