@@ -46,19 +46,12 @@ public class FakeAFK implements ModInitializer {
 
 		ServerPlayConnectionEvents.DISCONNECT.register(this::onDisconnect);
 		ServerPlayConnectionEvents.JOIN.register(this::onConnect);
-		ServerLifecycleEvents.SERVER_STOPPED.register(this::onServerClose);
-		ServerTickEvents.START_SERVER_TICK.register(this::onTick);
 
-		ResolveDataFile();
-		try {
-			data.createNewFile();
-			PeekableScanner scanner = new PeekableScanner(new Scanner(data));
-			commands.loadPermissions(scanner);
-			FakePlayerInfo.LoadPlayerNames(scanner);
-			scanner.close();
-		} catch (IOException e) {
-			FakeAFK.info("Failed to load data");
-		}
+		ServerLifecycleEvents.SERVER_STOPPED.register((server) -> save());
+		ServerLifecycleEvents.SERVER_STARTED.register((server) -> load());
+		ServerLifecycleEvents.START_DATA_PACK_RELOAD.register((server, resourceManager) -> load());
+
+		ServerTickEvents.START_SERVER_TICK.register(this::onTick);
 	}
 
 	private static void ResolveDataFile() {
@@ -66,7 +59,7 @@ public class FakeAFK implements ModInitializer {
 		data = FabricLoader.getInstance().getConfigDir().resolve("fake_afk.txt").toFile();
 	}
 
-	private void onServerClose(MinecraftServer server) {
+	private void save() {
 		ResolveDataFile();
 		try {
 			String s = "";
@@ -77,6 +70,19 @@ public class FakeAFK implements ModInitializer {
 			writer.close();
 		} catch (IOException e) {
 			FakeAFK.info("Failed to save data");
+		}
+	}
+
+	private void load() {
+		ResolveDataFile();
+		try {
+			data.createNewFile();
+			PeekableScanner scanner = new PeekableScanner(new Scanner(data));
+			commands.loadPermissions(scanner);
+			FakePlayerInfo.LoadPlayerNames(scanner);
+			scanner.close();
+		} catch (IOException e) {
+			FakeAFK.info("Failed to load data");
 		}
 	}
 
