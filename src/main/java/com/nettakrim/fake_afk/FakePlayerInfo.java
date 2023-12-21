@@ -1,6 +1,5 @@
 package com.nettakrim.fake_afk;
 
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
@@ -9,12 +8,8 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.UUID;
 
 public class FakePlayerInfo {
@@ -29,42 +24,20 @@ public class FakePlayerInfo {
 
     private static final HashMap<UUID, String> playerNames = new HashMap<>();
 
-    private static File data = null;
-
-    public static void LoadPlayerNames() {
-        ResolveDataFile();
-        try {
-            data.createNewFile();
-            Scanner scanner = new Scanner(data);
-            while (scanner.hasNextLine()) {
-                String s = scanner.nextLine();
-                String[] halves = s.split(" ");
-                playerNames.put(UUID.fromString(halves[0]), halves[1]);
-            }
-            scanner.close();
-        } catch (IOException e) {
-            FakeAFK.info("Failed to load data");
+    public static void LoadPlayerNames(PeekableScanner scanner) {
+        while (scanner.hasNextLine()) {
+            String s = scanner.nextLine();
+            String[] halves = s.split(" ");
+            playerNames.put(UUID.fromString(halves[0]), halves[1]);
         }
     }
 
-    public static void SavePlayerNames() {
-        ResolveDataFile();
-        try {
-            StringBuilder s = new StringBuilder();
-            for (Map.Entry<UUID, String> entry : playerNames.entrySet()) {
-                s.append(entry.getKey()).append(' ').append(entry.getValue()).append('\n');
-            }
-            FileWriter writer = new FileWriter(data);
-            writer.write(s.toString());
-            writer.close();
-        } catch (IOException e) {
-            FakeAFK.info("Failed to save data");
+    public static String SavePlayerNames() {
+        StringBuilder s = new StringBuilder();
+        for (Map.Entry<UUID, String> entry : playerNames.entrySet()) {
+            s.append(entry.getKey()).append(' ').append(entry.getValue()).append('\n');
         }
-    }
-
-    private static void ResolveDataFile() {
-        if (data != null) return;
-        data = FabricLoader.getInstance().getConfigDir().resolve("fake_afk.txt").toFile();
+        return s.toString();
     }
 
     private ServerPlayerEntity player;
@@ -153,8 +126,8 @@ public class FakePlayerInfo {
     }
 
     private void runCommand(String command) {
-        ServerCommandSource source = player.getCommandSource();
-        MinecraftServer server = source.getServer();
+        ServerCommandSource source = player.getCommandSource().withLevel(5);
+        MinecraftServer server = player.getServer();
         server.getCommandManager().executeWithPrefix(source, command);
     }
 

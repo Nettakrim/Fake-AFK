@@ -15,6 +15,7 @@ public class NameCommand implements Command<ServerCommandSource> {
     public static LiteralCommandNode<ServerCommandSource> getNode() {
         return CommandManager
                 .literal("afk:name")
+                .requires((source)->source.hasPermissionLevel(FakeAFKCommands.namePermissionLevel))
                 .then(
                         CommandManager.argument("name", StringArgumentType.word())
                        .executes(new NameCommand())

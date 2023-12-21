@@ -13,6 +13,7 @@ public class ReadyCommand implements Command<ServerCommandSource> {
     public static LiteralCommandNode<ServerCommandSource> getNode() {
         return CommandManager
                 .literal("afk:ready")
+                .requires((source)->source.hasPermissionLevel(FakeAFKCommands.readyPermissionLevel))
                 .executes(new ReadyCommand())
                 .build();
     }
