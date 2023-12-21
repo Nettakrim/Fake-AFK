@@ -1,9 +1,13 @@
 package com.nettakrim.fake_afk;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -99,8 +103,13 @@ public class FakePlayerInfo {
     }
 
     private void killFakePlayer() {
-        resetVelocity();
+        ServerPlayerEntity fakePlayer = resetVelocity();
         runCommand("player "+name+" kill");
+        if (fakePlayer != null) {
+            ServerWorld serverWorld = (ServerWorld)fakePlayer.getWorld();
+            serverWorld.spawnParticles(ParticleTypes.ENTITY_EFFECT, fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+            serverWorld.playSound(null, fakePlayer.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE.value(), SoundCategory.PLAYERS, 1, 1);
+        }
     }
 
     public void realPlayerDisconnect() {
@@ -120,6 +129,9 @@ public class FakePlayerInfo {
         runCommand("player "+name+" spawn in adventure");
         spawnedAt = System.currentTimeMillis();
         diedAt = -1;
+        ServerWorld serverWorld = (ServerWorld)player.getWorld();
+        serverWorld.spawnParticles(ParticleTypes.ENTITY_EFFECT, player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+        serverWorld.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 1, 1);
     }
 
     public void tryLogFakeDeath(String name) {
@@ -146,10 +158,11 @@ public class FakePlayerInfo {
         server.getCommandManager().executeWithPrefix(source, command);
     }
 
-    private void resetVelocity() {
+    private ServerPlayerEntity resetVelocity() {
         ServerPlayerEntity fakePlayer = getFakePlayer();
-        if (fakePlayer == null) return;
+        if (fakePlayer == null) return null;
         fakePlayer.setVelocity(0,0,0);
+        return fakePlayer;
     }
 
     private ServerPlayerEntity getFakePlayer() {
