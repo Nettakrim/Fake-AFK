@@ -112,15 +112,17 @@ public class FakePlayerInfo {
     }
 
     public void realPlayerJoin() {
-        long current = System.currentTimeMillis();
-        if (diedAt > 0) {
-            FakeAFK.instance.say(player, "Fake-You died while you were offline "+getTimeText(current-diedAt)+" ago, after "+getTimeText(diedAt-spawnedAt)+" of AFKing");
-            diedAt = -1L;
-        } else if (spawnedAt > 0) {
-            killFakePlayer();
-            FakeAFK.instance.say(player, "Fake-You was AFKing for "+getTimeText(current-spawnedAt));
+        if (afking) {
+            long current = System.currentTimeMillis();
+            if (diedAt > 0) {
+                FakeAFK.instance.say(player, "Fake-You died while you were offline " + getTimeText(current - diedAt) + " ago, after " + getTimeText(diedAt - spawnedAt) + " of AFKing");
+                diedAt = -1L;
+            } else if (spawnedAt > 0) {
+                killFakePlayer();
+                FakeAFK.instance.say(player, "Fake-You was AFKing for " + getTimeText(current - spawnedAt));
+            }
+            afking = false;
         }
-        afking = false;
     }
 
     public void killFakePlayer() {
