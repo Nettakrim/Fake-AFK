@@ -181,7 +181,7 @@ public class FakePlayerInfo {
 
     private void runCommand(String command) {
         //PlayerEntity playerEntity = player == null ? getFakePlayer() : player;
-        ServerCommandSource source = player.getCommandSource().withLevel(5);
+        ServerCommandSource source = player.getCommandSource().withLevel(4);
         MinecraftServer server = player.getServer();
         if (server == null) return;
         server.getCommandManager().executeWithPrefix(source, command);
