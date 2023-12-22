@@ -1,15 +1,28 @@
 package com.nettakrim.fake_afk;
 
+import com.mojang.authlib.GameProfile;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.ClientConnection;
+import net.minecraft.network.listener.PacketListener;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.common.SyncedClientOptions;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.PlayerManager;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ConnectedClientData;
+import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.UserCache;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -171,6 +184,7 @@ public class FakePlayerInfo {
         //PlayerEntity playerEntity = player == null ? getFakePlayer() : player;
         ServerCommandSource source = player.getCommandSource().withLevel(5);
         MinecraftServer server = player.getServer();
+        if (server == null) return;
         server.getCommandManager().executeWithPrefix(source, command);
     }
 
@@ -222,13 +236,62 @@ public class FakePlayerInfo {
             FakeAFK.instance.say(player, name+" is reserved, try a slight variation that doesn't have the format name-afk (eg name--afk, afk-name, name-bot, name-2)");
             return false;
         }
-        if (getFakePlayer() != null) {
+        ServerPlayerEntity oldPlayer = getFakePlayer();
+        if (oldPlayer != null) {
+            recoverInventory(oldPlayer);
             killFakePlayer();
+        } else {
+            try {
+                fakeRecovery(player.server);
+            } catch (Exception e) {
+                FakeAFK.info("Error transferring inventory:\n" + e);
+            }
         }
         playerNames.put(uuid, name);
         this.name = name;
         FakeAFK.instance.say(player, "Fake-You has been renamed to "+name.toLowerCase());
         return true;
+    }
+
+    private void fakeRecovery(MinecraftServer server) {
+        //very error-prone code since it does not fully load the new player
+        UserCache userCache = server.getUserCache();
+        if (userCache == null) return;
+        GameProfile profile = server.getUserCache().findByName(this.name).orElse(null);
+        if (profile == null) return;
+
+        PlayerManager playerManager = server.getPlayerManager();
+        SyncedClientOptions options = SyncedClientOptions.createDefault();
+
+        ServerPlayerEntity oldPlayer = playerManager.createPlayer(profile, options);
+        oldPlayer.networkHandler = new FakeNetworkHandler(server, oldPlayer);
+
+        playerManager.loadPlayerData(oldPlayer);
+        recoverInventory(oldPlayer);
+        playerManager.remove(oldPlayer);
+    }
+
+    private void recoverInventory(ServerPlayerEntity oldPlayer) {
+        PlayerInventory inventory = oldPlayer.getInventory();
+        if (inventory.isEmpty()) return;
+
+        oldPlayer.setPos(player.getX(), player.getY(), player.getZ());
+        oldPlayer.setPitch(player.getPitch());
+        oldPlayer.setYaw(player.getYaw());
+
+        //try to merge inventory with the player
+        Iterator<DefaultedList<ItemStack>> iterator = ((PlayerInventoryAccessor)inventory).fakeAFK$getInventory();
+        while(iterator.hasNext()) {
+            DefaultedList<ItemStack> defaultedList = iterator.next();
+            for (ItemStack itemStack : defaultedList) {
+                if (!itemStack.isEmpty()) {
+                    player.getInventory().insertStack(itemStack);
+                }
+            }
+        }
+
+        //then just explode at the players position as if the old player had died there
+        inventory.dropAll();
     }
 
     public String getName() {
@@ -263,5 +326,32 @@ public class FakePlayerInfo {
 
     public boolean isAFKing() {
         return afking;
+    }
+
+    private static class FakeNetworkHandler extends ServerPlayNetworkHandler {
+        //short-lived object that just needs to last long enough to stop errors from happening when it gets sent wildly into minecraft code
+        public FakeNetworkHandler(MinecraftServer server, ServerPlayerEntity player) {
+            super(server, new FakeConnection(), player, new ConnectedClientData(player.getGameProfile(), 0, player.getClientOptions()));
+        }
+
+        @Override
+        public void requestTeleport(double x, double y, double z, float yaw, float pitch) {}
+
+        @Override
+        public void sendPacket(Packet<?> packet) {}
+
+        private static class FakeConnection extends ClientConnection {
+            public FakeConnection() {
+                super(null);
+            }
+
+            @Override
+            public void setPacketListener(PacketListener packetListener) {}
+
+            @Override
+            public boolean isLocal() {
+                return false;
+            }
+        }
     }
 }
