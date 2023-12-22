@@ -7,6 +7,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.MathHelper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +27,7 @@ public class FakePlayerInfo {
 
     private static int maxAFKTicks = -1;
     private static int maxSummonTicks = 6000;
+    private static int maxNameLength = 40;
 
     public static void LoadPlayerNames(PeekableScanner scanner) {
         boolean ready = false;
@@ -42,6 +44,7 @@ public class FakePlayerInfo {
                     switch (halves[0]) {
                         case "max_afk_ticks" -> maxAFKTicks = value == -2 ? maxAFKTicks : value;
                         case "max_summon_ticks" -> maxSummonTicks = value == -2 ? maxSummonTicks : value;
+                        case "max_name_length" -> maxNameLength = value == -2 ? maxNameLength : MathHelper.clamp(value, 20, 40);
                     }
                 }
             }
@@ -52,6 +55,7 @@ public class FakePlayerInfo {
         StringBuilder s = new StringBuilder();
         s.append("max_afk_ticks: ").append(maxAFKTicks).append("\n");
         s.append("max_summon_ticks: ").append(maxSummonTicks).append("\n");
+        s.append("max_name_length: ").append(maxNameLength).append("\n");
         s.append("names:\n");
         for (Map.Entry<UUID, String> entry : playerNames.entrySet()) {
             s.append(entry.getKey()).append(' ').append(entry.getValue()).append('\n');
@@ -198,19 +202,32 @@ public class FakePlayerInfo {
     public boolean setName(String name) {
         name = name.toLowerCase();
         if (name.equalsIgnoreCase(playerNames.get(uuid))) {
+            FakeAFK.instance.say(player, "Fake-You has is already named "+name.toLowerCase());
             return true;
         }
-
+        //disallow names that are too long for carpet
+        if (name.length() > maxNameLength) {
+            FakeAFK.instance.say(player, name+" is too long (max "+maxNameLength+" characters)");
+            return false;
+        }
         //disallow names that are already taken
         for (String s : playerNames.values()) {
-            if (name.equals(s)) return false;
+            if (name.equalsIgnoreCase(s)) {
+                FakeAFK.instance.say(player, name+" is already taken");
+                return false;
+            }
         }
         //disallow steve naming themselves alex-afk, since that's alex's reserved name, steve can do alex--afk, or afk-alex etc and they can also do steve-afk
         if (name.endsWith("-afk") && name.substring(name.indexOf('-')).length() <= 4 && !name.equalsIgnoreCase(player.getNameForScoreboard()+"-afk")) {
+            FakeAFK.instance.say(player, name+" is reserved, try a slight variation that doesn't have the format name-afk (eg name--afk, afk-name, name-bot, name-2)");
             return false;
+        }
+        if (getFakePlayer() != null) {
+            killFakePlayer();
         }
         playerNames.put(uuid, name);
         this.name = name;
+        FakeAFK.instance.say(player, "Fake-You has been renamed to "+name.toLowerCase());
         return true;
     }
 

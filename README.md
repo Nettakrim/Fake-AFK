@@ -27,6 +27,7 @@ Fake AFK's config and data can be found in `config/fake_afk.txt`, and looks like
 | max_afk_type: 1                      | when a new person tries to afk, what should happen?:<br/>1 - kick player whose been fake afk the longest<br/>2 - dont allow more fake afk players       |
 | max_afk_ticks: -1                    | max time in ticks people can fake afk for, -1 is unlimited                                                                                              |
 | max_summon_ticks: 6000               | max time in ticks people can /afk:summon their fake players for, -1 is unlimited                                                                        |
+| max_name_length: 40                  | max length of peoples names, in the range 20-40 (16 is vanilla limit +4 for the -afk is 20, 40 is carpets limit)                                        |
 | names:                               | list of what people have named their fake players:                                                                                                      |
 | 9c3adf8d-a723-... nettakrim-is-afk   | <uuid> <name>                                                                                                                                           |
 

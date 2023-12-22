@@ -34,12 +34,7 @@ public class NameCommand implements Command<ServerCommandSource> {
         }
         FakePlayerInfo fakePlayerInfo = FakeAFK.instance.getFakePlayerInfo(context.getSource().getPlayer());
         if (fakePlayerInfo == null) return 0;
-        if (fakePlayerInfo.setName(name)) {
-            FakeAFK.instance.say(player, "Fake-You has been renamed to "+name.toLowerCase());
-            return 1;
-        }
-        FakeAFK.instance.say(player, name+" is already taken, or the name is otherwise reserved");
-        return 0;
+        return fakePlayerInfo.setName(name) ? 1 : 0;
     }
 
     private static int help(CommandContext<ServerCommandSource> context) {
