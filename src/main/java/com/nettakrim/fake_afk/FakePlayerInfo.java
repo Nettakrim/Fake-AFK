@@ -21,10 +21,7 @@ import net.minecraft.util.UserCache;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.MathHelper;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class FakePlayerInfo {
     public FakePlayerInfo(ServerPlayerEntity player) {
@@ -279,19 +276,21 @@ public class FakePlayerInfo {
         oldPlayer.setPitch(player.getPitch());
         oldPlayer.setYaw(player.getYaw());
 
-        //try to merge inventory with the player
+        //try to merge inventory with the player, throwing any spare items
         Iterator<DefaultedList<ItemStack>> iterator = ((PlayerInventoryAccessor)inventory).fakeAFK$getInventory();
         while(iterator.hasNext()) {
             DefaultedList<ItemStack> defaultedList = iterator.next();
             for (ItemStack itemStack : defaultedList) {
                 if (!itemStack.isEmpty()) {
                     player.getInventory().insertStack(itemStack);
+                    if (!itemStack.isEmpty()) {
+                        oldPlayer.dropItem(itemStack, false, false);
+                    }
                 }
             }
         }
 
-        //then just explode at the players position as if the old player had died there
-        inventory.dropAll();
+        inventory.clear();
     }
 
     public String getName() {
