@@ -4,9 +4,9 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.common.SyncedClientOptions;
+import net.minecraft.particle.EntityEffectParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
@@ -19,7 +19,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.ColorHelper;
 
 import java.util.*;
 
@@ -37,7 +37,7 @@ public class FakePlayerInfo {
 
     private static int maxAFKTicks = -1;
     private static int maxSummonTicks = 6000;
-    private static int maxNameLength = 40;
+    private static int maxNameLength = 16;
 
     public static void LoadPlayerNames(PeekableScanner scanner) {
         boolean ready = false;
@@ -54,7 +54,6 @@ public class FakePlayerInfo {
                     switch (halves[0]) {
                         case "max_afk_ticks" -> maxAFKTicks = value == -2 ? maxAFKTicks : value;
                         case "max_summon_ticks" -> maxSummonTicks = value == -2 ? maxSummonTicks : value;
-                        case "max_name_length" -> maxNameLength = value == -2 ? maxNameLength : MathHelper.clamp(value, 20, 40);
                     }
                 }
             }
@@ -65,7 +64,6 @@ public class FakePlayerInfo {
         StringBuilder s = new StringBuilder();
         s.append("max_afk_ticks: ").append(maxAFKTicks).append("\n");
         s.append("max_summon_ticks: ").append(maxSummonTicks).append("\n");
-        s.append("max_name_length: ").append(maxNameLength).append("\n");
         s.append("names:\n");
         for (Map.Entry<UUID, String> entry : playerNames.entrySet()) {
             s.append(entry.getKey()).append(' ').append(entry.getValue()).append('\n');
@@ -130,7 +128,7 @@ public class FakePlayerInfo {
         if (fakePlayer != null) {
             runCommand("player "+name+" kill");
             ServerWorld serverWorld = (ServerWorld)fakePlayer.getWorld();
-            serverWorld.spawnParticles(ParticleTypes.ENTITY_EFFECT, fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+            serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.Argb.getArgb(255, 255, 255, 255)), fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
             serverWorld.playSound(null, fakePlayer.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE.value(), SoundCategory.PLAYERS, 1, 1);
         }
     }
@@ -156,7 +154,7 @@ public class FakePlayerInfo {
         spawnedAt = System.currentTimeMillis();
         diedAt = -1;
         ServerWorld serverWorld = (ServerWorld)player.getWorld();
-        serverWorld.spawnParticles(ParticleTypes.ENTITY_EFFECT, player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+        serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.Argb.getArgb(255, 255, 255, 255)), player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 1, 1);
     }
 
@@ -332,7 +330,7 @@ public class FakePlayerInfo {
     private static class FakeNetworkHandler extends ServerPlayNetworkHandler {
         //short-lived object that just needs to last long enough to stop errors from happening when it gets sent wildly into minecraft code
         public FakeNetworkHandler(MinecraftServer server, ServerPlayerEntity player) {
-            super(server, new FakeConnection(), player, new ConnectedClientData(player.getGameProfile(), 0, player.getClientOptions()));
+            super(server, new FakeConnection(), player, new ConnectedClientData(player.getGameProfile(), 0, player.getClientOptions(), false));
         }
 
         @Override
@@ -345,9 +343,6 @@ public class FakePlayerInfo {
             public FakeConnection() {
                 super(null);
             }
-
-            @Override
-            public void setPacketListener(PacketListener packetListener) {}
 
             @Override
             public boolean isLocal() {
