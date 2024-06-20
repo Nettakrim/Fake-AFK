@@ -37,7 +37,7 @@ public class FakePlayerInfo {
 
     private static int maxAFKTicks = -1;
     private static int maxSummonTicks = 6000;
-    private static int maxNameLength = 16;
+    private static final int maxNameLength = 16;
 
     public static void LoadPlayerNames(PeekableScanner scanner) {
         boolean ready = false;
@@ -229,7 +229,7 @@ public class FakePlayerInfo {
             }
         }
         //disallow steve naming themselves alex-afk, since that's alex's reserved name, steve can do alex--afk, or afk-alex etc and they can also do steve-afk
-        if (name.endsWith("-afk") && name.substring(name.indexOf('-')).length() <= 4 && !name.equalsIgnoreCase(player.getNameForScoreboard()+"-afk")) {
+        if (isReservedName(player.getNameForScoreboard(), name)) {
             FakeAFK.instance.say(player, name+" is reserved, try a slight variation that doesn't have the format name-afk (eg name--afk, afk-name, name-bot, name-2)");
             return false;
         }
@@ -302,7 +302,27 @@ public class FakePlayerInfo {
         if (saved != null) {
             return saved;
         }
-        return (player.getNameForScoreboard()+"-afk").toLowerCase();
+        return getDefaultName(player.getNameForScoreboard());
+    }
+
+    private static String getDefaultName(String name) {
+        name = name.toLowerCase();
+        if (name.length() < maxNameLength) {
+            name += "-afk";
+            return name.length() > maxNameLength ? name.substring(0, maxNameLength) : name;
+        } else {
+            return name.substring(0, name.length()-1)+"-";
+        }
+    }
+
+    private static boolean isReservedName(String player, String name) {
+        if (name.equals(getDefaultName(player))) {
+            return false;
+        }
+        String afterFirst = name.substring(name.indexOf('-')+1);
+        if (afterFirst.contains("-")) return false;
+        if (afterFirst.equals("afk")) return true;
+        return name.length() == maxNameLength && (afterFirst.equals("af") || afterFirst.equals("a"));
     }
 
     public boolean uuidEquals(UUID other) {
