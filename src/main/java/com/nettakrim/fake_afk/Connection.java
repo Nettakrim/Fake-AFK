@@ -68,7 +68,7 @@ public class Connection {
         FakePlayerInfo info = FakeAFK.instance.getFakePlayerInfo(player);
 
         //filter out fake players, this isnt needed on disconnect as that method doesn't trigger for fake players
-        String name = player.getNameForScoreboard();
+        String name = player.getEntityName();
         if (name.contains("-")) return;
 
         if (info != null) {
@@ -81,7 +81,7 @@ public class Connection {
     }
 
     public void logFakeDeath(ServerPlayerEntity player) {
-        String name = player.getNameForScoreboard();
+        String name = player.getEntityName();
         if (!name.contains("-")) return;
         for (FakePlayerInfo fakePlayerInfo : FakeAFK.instance.fakePlayers) {
             fakePlayerInfo.tryLogFakeDeath(name);
@@ -92,37 +92,37 @@ public class Connection {
         for (FakePlayerInfo info : FakeAFK.instance.fakePlayers) {
             info.tick();
         }
-        if (server.getTicks()%1200 == 0) {
-            msptCheck(server);
-        }
+        //if (server.getTicks()%1200 == 0) {
+        //    msptCheck(server);
+        //}
     }
 
-    private void msptCheck(MinecraftServer server) {
-        if (msptKickLimit > 0 && msptKickType > 0) {
-            long uspt = server.getAverageNanosPerTick()/1000L;
-            if (uspt > msptKickLimit*1000L) {
-                if (msptKickType == 1) {
-                    FakePlayerInfo oldest = getOldest();
-                    if (oldest != null) {
-                        oldest.killFakePlayer();
-                        FakeAFK.instance.say(server, "Server is lagging! Dispelling the Fake AFK player whose been AFK the longest");
-                    }
-                }
-                else if (msptKickType == 2) {
-                    boolean found = false;
-                    for (FakePlayerInfo fakePlayerInfo : FakeAFK.instance.fakePlayers) {
-                        if (fakePlayerInfo.isAFKing()) {
-                            fakePlayerInfo.killFakePlayer();
-                            found = true;
-                        }
-                    }
-                    if (found) {
-                        FakeAFK.instance.say(server, "Server is lagging! Dispelling all Fake AFK players");
-                    }
-                }
-            }
-        }
-    }
+    //private void msptCheck(MinecraftServer server) {
+    //    if (msptKickLimit > 0 && msptKickType > 0) {
+    //        long uspt = server.getAverageNanosPerTick()/1000L;
+    //        if (uspt > msptKickLimit*1000L) {
+    //            if (msptKickType == 1) {
+    //                FakePlayerInfo oldest = getOldest();
+    //                if (oldest != null) {
+    //                    oldest.killFakePlayer();
+    //                    FakeAFK.instance.say(server, "Server is lagging! Dispelling the Fake AFK player whose been AFK the longest");
+    //                }
+    //            }
+    //            else if (msptKickType == 2) {
+    //                boolean found = false;
+    //                for (FakePlayerInfo fakePlayerInfo : FakeAFK.instance.fakePlayers) {
+    //                    if (fakePlayerInfo.isAFKing()) {
+    //                        fakePlayerInfo.killFakePlayer();
+    //                        found = true;
+    //                    }
+    //                }
+    //                if (found) {
+    //                    FakeAFK.instance.say(server, "Server is lagging! Dispelling all Fake AFK players");
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
 
     private FakePlayerInfo getOldest() {
         long currentTime = System.currentTimeMillis();

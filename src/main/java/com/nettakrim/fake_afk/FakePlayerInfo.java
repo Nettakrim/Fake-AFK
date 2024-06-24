@@ -5,13 +5,10 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.common.SyncedClientOptions;
-import net.minecraft.particle.EntityEffectParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -19,7 +16,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.math.ColorHelper;
 
 import java.util.*;
 
@@ -128,7 +124,7 @@ public class FakePlayerInfo {
         if (fakePlayer != null) {
             runCommand("player "+name+" kill");
             ServerWorld serverWorld = (ServerWorld)fakePlayer.getWorld();
-            serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.Argb.getArgb(255, 255, 255, 255)), fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+            serverWorld.spawnParticles(ParticleTypes.ENTITY_EFFECT, fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
             serverWorld.playSound(null, fakePlayer.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE.value(), SoundCategory.PLAYERS, 1, 1);
         }
     }
@@ -154,7 +150,7 @@ public class FakePlayerInfo {
         spawnedAt = System.currentTimeMillis();
         diedAt = -1;
         ServerWorld serverWorld = (ServerWorld)player.getWorld();
-        serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.Argb.getArgb(255, 255, 255, 255)), player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+        serverWorld.spawnParticles(ParticleTypes.ENTITY_EFFECT, player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 1, 1);
     }
 
@@ -229,7 +225,7 @@ public class FakePlayerInfo {
             }
         }
         //disallow steve naming themselves alex-afk, since that's alex's reserved name, steve can do alex--afk, or afk-alex etc and they can also do steve-afk
-        if (isReservedName(player.getNameForScoreboard(), name)) {
+        if (isReservedName(player.getEntityName(), name)) {
             FakeAFK.instance.say(player, name+" is reserved, try a slight variation that doesn't have the format name-afk (eg name--afk, afk-name, name-bot, name-2)");
             return false;
         }
@@ -258,9 +254,8 @@ public class FakePlayerInfo {
         if (profile == null) return;
 
         PlayerManager playerManager = server.getPlayerManager();
-        SyncedClientOptions options = SyncedClientOptions.createDefault();
 
-        ServerPlayerEntity oldPlayer = playerManager.createPlayer(profile, options);
+        ServerPlayerEntity oldPlayer = playerManager.createPlayer(profile);
         oldPlayer.networkHandler = new FakeNetworkHandler(server, oldPlayer);
 
         playerManager.loadPlayerData(oldPlayer);
@@ -302,7 +297,7 @@ public class FakePlayerInfo {
         if (saved != null) {
             return saved;
         }
-        return getDefaultName(player.getNameForScoreboard());
+        return getDefaultName(player.getEntityName());
     }
 
     private static String getDefaultName(String name) {
@@ -350,7 +345,7 @@ public class FakePlayerInfo {
     private static class FakeNetworkHandler extends ServerPlayNetworkHandler {
         //short-lived object that just needs to last long enough to stop errors from happening when it gets sent wildly into minecraft code
         public FakeNetworkHandler(MinecraftServer server, ServerPlayerEntity player) {
-            super(server, new FakeConnection(), player, new ConnectedClientData(player.getGameProfile(), 0, player.getClientOptions(), false));
+            super(server, new FakeConnection(), player);
         }
 
         @Override
