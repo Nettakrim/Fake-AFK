@@ -20,6 +20,8 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.ColorHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.TeleportTarget;
 
 import java.util.*;
 
@@ -128,7 +130,7 @@ public class FakePlayerInfo {
         if (fakePlayer != null) {
             runCommand("player "+name+" kill");
             ServerWorld serverWorld = (ServerWorld)fakePlayer.getWorld();
-            serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.Argb.getArgb(255, 255, 255, 255)), fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+            serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.getArgb(255, 255, 255, 255)), fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
             serverWorld.playSound(null, fakePlayer.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE.value(), SoundCategory.PLAYERS, 1, 1);
         }
     }
@@ -138,7 +140,7 @@ public class FakePlayerInfo {
             despawnInTicks = maxAFKTicks;
             ServerPlayerEntity fakePlayer = getFakePlayer();
             if (fakePlayer != null) {
-                fakePlayer.teleport(player.getServerWorld(), player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch());
+                fakePlayer.teleportTo(new TeleportTarget(player.getServerWorld(), player.getPos(), Vec3d.ZERO, player.getYaw(), player.getPitch(), TeleportTarget.NO_OP));
             } else {
                 spawnFakePlayer();
             }
@@ -154,7 +156,7 @@ public class FakePlayerInfo {
         spawnedAt = System.currentTimeMillis();
         diedAt = -1;
         ServerWorld serverWorld = (ServerWorld)player.getWorld();
-        serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.Argb.getArgb(255, 255, 255, 255)), player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+        serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.getArgb(255, 255, 255, 255)), player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 1, 1);
     }
 
