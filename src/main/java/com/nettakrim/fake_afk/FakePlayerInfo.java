@@ -18,7 +18,6 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.UserCache;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.TeleportTarget;
@@ -279,15 +278,11 @@ public class FakePlayerInfo {
         oldPlayer.setYaw(player.getYaw());
 
         //try to merge inventory with the player, throwing any spare items
-        Iterator<DefaultedList<ItemStack>> iterator = ((PlayerInventoryAccessor)inventory).fakeAFK$getInventory();
-        while(iterator.hasNext()) {
-            DefaultedList<ItemStack> defaultedList = iterator.next();
-            for (ItemStack itemStack : defaultedList) {
+        for (ItemStack itemStack : inventory) {
+            if (!itemStack.isEmpty()) {
+                player.getInventory().insertStack(itemStack);
                 if (!itemStack.isEmpty()) {
-                    player.getInventory().insertStack(itemStack);
-                    if (!itemStack.isEmpty()) {
-                        oldPlayer.dropItem(itemStack, false, false);
-                    }
+                    oldPlayer.dropItem(itemStack, false, false);
                 }
             }
         }
