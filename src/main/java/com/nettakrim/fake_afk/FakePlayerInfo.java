@@ -21,6 +21,7 @@ import net.minecraft.util.UserCache;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.TeleportTarget;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -139,7 +140,7 @@ public class FakePlayerInfo {
             despawnInTicks = maxAFKTicks;
             ServerPlayerEntity fakePlayer = getFakePlayer();
             if (fakePlayer != null) {
-                fakePlayer.teleportTo(new TeleportTarget(player.getServerWorld(), player.getPos(), Vec3d.ZERO, player.getYaw(), player.getPitch(), TeleportTarget.NO_OP));
+                teleportToPlayer(fakePlayer);
             } else {
                 spawnFakePlayer();
             }
@@ -157,6 +158,17 @@ public class FakePlayerInfo {
         ServerWorld serverWorld = (ServerWorld)player.getWorld();
         serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.getArgb(255, 255, 255, 255)), player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 1, 1);
+
+        ServerPlayerEntity fakePlayer = getFakePlayer();
+        if (fakePlayer != null) {
+            teleportToPlayer(fakePlayer);
+        } else {
+            FakeAFK.info("COULDNT SUMMON FAKE PLAYER "+name);
+        }
+    }
+
+    public void teleportToPlayer(@NotNull ServerPlayerEntity fakePlayer) {
+        fakePlayer.teleportTo(new TeleportTarget(player.getServerWorld(), player.getPos(), Vec3d.ZERO, player.getYaw(), player.getPitch(), TeleportTarget.NO_OP));
     }
 
     public void tryLogFakeDeath(String name) {
