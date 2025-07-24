@@ -16,7 +16,7 @@ import java.util.UUID;
 
 public class FakeAFK implements ModInitializer {
 	public static FakeAFK instance;
-    private static final Logger LOGGER = LoggerFactory.getLogger("fake-afk");
+    public static final Logger LOGGER = LoggerFactory.getLogger("fake-afk");
 
 	public ArrayList<FakePlayerInfo> fakePlayers;
 

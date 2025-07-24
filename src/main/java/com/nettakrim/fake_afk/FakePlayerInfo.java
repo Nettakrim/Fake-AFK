@@ -17,6 +17,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ErrorReporter;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Vec3d;
@@ -129,7 +130,7 @@ public class FakePlayerInfo {
         ServerPlayerEntity fakePlayer = resetVelocity();
         if (fakePlayer != null) {
             runCommand("player "+name+" kill");
-            ServerWorld serverWorld = (ServerWorld)fakePlayer.getWorld();
+            ServerWorld serverWorld = fakePlayer.getWorld();
             serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.getArgb(255, 255, 255, 255)), fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
             serverWorld.playSound(null, fakePlayer.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE.value(), SoundCategory.PLAYERS, 1, 1);
         }
@@ -155,7 +156,7 @@ public class FakePlayerInfo {
         runCommand("player "+name+" spawn in adventure");
         spawnedAt = System.currentTimeMillis();
         diedAt = -1;
-        ServerWorld serverWorld = (ServerWorld)player.getWorld();
+        ServerWorld serverWorld = player.getWorld();
         serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.getArgb(255, 255, 255, 255)), player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 1, 1);
 
@@ -168,7 +169,7 @@ public class FakePlayerInfo {
     }
 
     public void teleportToPlayer(@NotNull ServerPlayerEntity fakePlayer) {
-        fakePlayer.teleportTo(new TeleportTarget(player.getServerWorld(), player.getPos(), Vec3d.ZERO, player.getYaw(), player.getPitch(), TeleportTarget.NO_OP));
+        fakePlayer.teleportTo(new TeleportTarget(player.getWorld(), player.getPos(), Vec3d.ZERO, player.getYaw(), player.getPitch(), TeleportTarget.NO_OP));
     }
 
     public void tryLogFakeDeath(String name) {
@@ -252,7 +253,7 @@ public class FakePlayerInfo {
             killFakePlayer();
         } else {
             try {
-                fakeRecovery(player.server);
+                fakeRecovery(player.getWorld().getServer());
             } catch (Exception e) {
                 FakeAFK.info("Error transferring inventory:\n" + e);
             }
@@ -273,10 +274,10 @@ public class FakePlayerInfo {
         PlayerManager playerManager = server.getPlayerManager();
         SyncedClientOptions options = SyncedClientOptions.createDefault();
 
-        ServerPlayerEntity oldPlayer = playerManager.createPlayer(profile, options);
+        ServerPlayerEntity oldPlayer = new ServerPlayerEntity(server, server.getOverworld(), profile, options);
         oldPlayer.networkHandler = new FakeNetworkHandler(server, oldPlayer);
 
-        playerManager.loadPlayerData(oldPlayer);
+        playerManager.loadPlayerData(oldPlayer, new ErrorReporter.Logging(player.getErrorReporterContext(), FakeAFK.LOGGER));
         recoverInventory(oldPlayer);
         playerManager.remove(oldPlayer);
     }
