@@ -6,9 +6,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.common.SyncedClientOptions;
-import net.minecraft.particle.EntityEffectParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.particle.TintedParticleEffect;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.PlayerConfigEntry;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ConnectedClientData;
@@ -17,8 +18,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.ErrorReporter;
-import net.minecraft.util.UserCache;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.TeleportTarget;
@@ -130,8 +129,8 @@ public class FakePlayerInfo {
         ServerPlayerEntity fakePlayer = resetVelocity();
         if (fakePlayer != null) {
             runCommand("player "+name+" kill");
-            ServerWorld serverWorld = fakePlayer.getWorld();
-            serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.getArgb(255, 255, 255, 255)), fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+            ServerWorld serverWorld = fakePlayer.getEntityWorld();
+            serverWorld.spawnParticles(TintedParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.getArgb(255, 255, 255, 255)), fakePlayer.getX(), fakePlayer.getY()+0.5, fakePlayer.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
             serverWorld.playSound(null, fakePlayer.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE.value(), SoundCategory.PLAYERS, 1, 1);
         }
     }
@@ -156,8 +155,8 @@ public class FakePlayerInfo {
         runCommand("player "+name+" spawn in adventure");
         spawnedAt = System.currentTimeMillis();
         diedAt = -1;
-        ServerWorld serverWorld = player.getWorld();
-        serverWorld.spawnParticles(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.getArgb(255, 255, 255, 255)), player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
+        ServerWorld serverWorld = player.getEntityWorld();
+        serverWorld.spawnParticles(TintedParticleEffect.create(ParticleTypes.ENTITY_EFFECT, ColorHelper.getArgb(255, 255, 255, 255)), player.getX(), player.getY()+0.5, player.getZ(), 25, 0.5f, 1f, 0.5f, 1f);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 1, 1);
 
         ServerPlayerEntity fakePlayer = getFakePlayer();
@@ -169,7 +168,7 @@ public class FakePlayerInfo {
     }
 
     public void teleportToPlayer(@NotNull ServerPlayerEntity fakePlayer) {
-        fakePlayer.teleportTo(new TeleportTarget(player.getWorld(), player.getPos(), Vec3d.ZERO, player.getYaw(), player.getPitch(), TeleportTarget.NO_OP));
+        fakePlayer.teleportTo(new TeleportTarget(player.getEntityWorld(), player.getEntityPos(), Vec3d.ZERO, player.getYaw(), player.getPitch(), TeleportTarget.NO_OP));
     }
 
     public void tryLogFakeDeath(String name) {
@@ -192,10 +191,8 @@ public class FakePlayerInfo {
     }
 
     private void runCommand(String command) {
-        //PlayerEntity playerEntity = player == null ? getFakePlayer() : player;
         ServerCommandSource source = player.getCommandSource().withLevel(4);
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
+        MinecraftServer server = player.getEntityWorld().getServer();
         server.getCommandManager().executeWithPrefix(source, command);
     }
 
@@ -207,8 +204,7 @@ public class FakePlayerInfo {
     }
 
     private ServerPlayerEntity getFakePlayer() {
-        MinecraftServer server = player.getServer();
-        if (server == null) return null;
+        MinecraftServer server = player.getEntityWorld().getServer();
         return server.getPlayerManager().getPlayer(name);
     }
 
@@ -253,7 +249,7 @@ public class FakePlayerInfo {
             killFakePlayer();
         } else {
             try {
-                fakeRecovery(player.getWorld().getServer());
+                fakeRecovery(player.getEntityWorld().getServer());
             } catch (Exception e) {
                 FakeAFK.info("Error transferring inventory:\n" + e);
             }
@@ -266,18 +262,17 @@ public class FakePlayerInfo {
 
     private void fakeRecovery(MinecraftServer server) {
         //very error-prone code since it does not fully load the new player
-        UserCache userCache = server.getUserCache();
-        if (userCache == null) return;
-        GameProfile profile = server.getUserCache().findByName(this.name).orElse(null);
-        if (profile == null) return;
+        PlayerConfigEntry configEntry = server.getApiServices().nameToIdCache().findByName(this.name).orElse(null);
+        if (configEntry == null) return;
 
         PlayerManager playerManager = server.getPlayerManager();
+        playerManager.loadPlayerData(configEntry);
+
         SyncedClientOptions options = SyncedClientOptions.createDefault();
 
-        ServerPlayerEntity oldPlayer = new ServerPlayerEntity(server, server.getOverworld(), profile, options);
+        ServerPlayerEntity oldPlayer = new ServerPlayerEntity(server, server.getOverworld(), new GameProfile(configEntry.id(), configEntry.name()), options);
         oldPlayer.networkHandler = new FakeNetworkHandler(server, oldPlayer);
 
-        playerManager.loadPlayerData(oldPlayer, new ErrorReporter.Logging(player.getErrorReporterContext(), FakeAFK.LOGGER));
         recoverInventory(oldPlayer);
         playerManager.remove(oldPlayer);
     }
