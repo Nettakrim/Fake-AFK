@@ -4,14 +4,14 @@ import com.mojang.brigadier.tree.RootCommandNode;
 import com.nettakrim.fake_afk.FakeAFK;
 import com.nettakrim.fake_afk.PeekableScanner;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.command.permission.Permission;
-import net.minecraft.command.permission.PermissionLevel;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 
 public class FakeAFKCommands {
     public FakeAFKCommands() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            RootCommandNode<ServerCommandSource> root = dispatcher.getRoot();
+            RootCommandNode<CommandSourceStack> root = dispatcher.getRoot();
 
             root.addChild(NameCommand.getNode());
             root.addChild(ReadyCommand.getNode());
@@ -52,7 +52,7 @@ public class FakeAFKCommands {
                "allow_real_names_permission_level: " + allowRealNamesPermissionLevel + "\n";
     }
 
-    public static boolean hasPermission(ServerCommandSource source, int level) {
-        return source.getPermissions().hasPermission(new Permission.Level(PermissionLevel.fromLevel(level)));
+    public static boolean hasPermission(CommandSourceStack source, int level) {
+        return source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(level)));
     }
 }

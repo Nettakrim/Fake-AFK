@@ -6,12 +6,12 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.nettakrim.fake_afk.FakeAFK;
 import com.nettakrim.fake_afk.FakePlayerInfo;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 
-public class ReadyCommand implements Command<ServerCommandSource> {
-    public static LiteralCommandNode<ServerCommandSource> getNode() {
-        return CommandManager
+public class ReadyCommand implements Command<CommandSourceStack> {
+    public static LiteralCommandNode<CommandSourceStack> getNode() {
+        return Commands
                 .literal("afk:ready")
                 .requires(source -> FakeAFKCommands.hasPermission(source, FakeAFKCommands.readyPermissionLevel))
                 .executes(new ReadyCommand())
@@ -19,7 +19,7 @@ public class ReadyCommand implements Command<ServerCommandSource> {
     }
 
     @Override
-    public int run(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    public int run(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         FakePlayerInfo fakePlayerInfo = FakeAFK.instance.getFakePlayerInfo(context.getSource().getPlayer());
         if (fakePlayerInfo == null) return 0;
         fakePlayerInfo.readyForDisconnect();

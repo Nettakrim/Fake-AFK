@@ -7,17 +7,17 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.nettakrim.fake_afk.FakeAFK;
 import com.nettakrim.fake_afk.FakePlayerInfo;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 
-public class NameCommand implements Command<ServerCommandSource> {
-    public static LiteralCommandNode<ServerCommandSource> getNode() {
-        return CommandManager
+public class NameCommand implements Command<CommandSourceStack> {
+    public static LiteralCommandNode<CommandSourceStack> getNode() {
+        return Commands
                 .literal("afk:name")
                 .requires(context -> FakeAFKCommands.hasPermission(context, FakeAFKCommands.namePermissionLevel))
                 .then(
-                        CommandManager.argument("name", StringArgumentType.word())
+                        Commands.argument("name", StringArgumentType.word())
                        .executes(new NameCommand())
                 )
                 .executes(NameCommand::help)
@@ -25,8 +25,8 @@ public class NameCommand implements Command<ServerCommandSource> {
     }
 
     @Override
-    public int run(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayer();
+    public int run(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayer();
         String name = StringArgumentType.getString(context, "name");
         if (!(name.contains("-") || FakeAFKCommands.hasPermission(context.getSource(), FakeAFKCommands.allowRealNamesPermissionLevel))) {
             FakeAFK.instance.say(player, "you must have a - somewhere in the name to distinguish Fake-You from real players (for instance is-steve-afk)");
@@ -37,8 +37,8 @@ public class NameCommand implements Command<ServerCommandSource> {
         return fakePlayerInfo.setName(name) ? 1 : 0;
     }
 
-    private static int help(CommandContext<ServerCommandSource> context) {
-        ServerPlayerEntity player = context.getSource().getPlayer();
+    private static int help(CommandContext<CommandSourceStack> context) {
+        ServerPlayer player = context.getSource().getPlayer();
         FakePlayerInfo fakePlayerInfo = FakeAFK.instance.getFakePlayerInfo(player);
         if (fakePlayerInfo == null) return 0;
         FakeAFK.instance.say(player, "Fake-You is currently called "+fakePlayerInfo.getName()+"\nuse /afk:name <name> to rename them");

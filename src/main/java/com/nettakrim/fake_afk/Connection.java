@@ -4,8 +4,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 
 public class Connection {
     public Connection() {
@@ -47,8 +47,8 @@ public class Connection {
                "max_afk_type: " + maxAFKType + "\n";
     }
 
-    public void onDisconnect(ServerPlayNetworkHandler handler, MinecraftServer server) {
-        ServerPlayerEntity player = handler.getPlayer();
+    public void onDisconnect(ServerGamePacketListenerImpl handler, MinecraftServer server) {
+        ServerPlayer player = handler.getPlayer();
         FakePlayerInfo info = FakeAFK.instance.getFakePlayerInfo(player);
         if (info != null) {
             boolean atLimit = (maxAFKLimit > 0) && (getTotalAfking() >= maxAFKLimit);
@@ -63,12 +63,12 @@ public class Connection {
         }
     }
 
-    public void onConnect(ServerPlayNetworkHandler handler, PacketSender packetSender, MinecraftServer server) {
-        ServerPlayerEntity player = handler.getPlayer();
+    public void onConnect(ServerGamePacketListenerImpl handler, PacketSender packetSender, MinecraftServer server) {
+        ServerPlayer player = handler.getPlayer();
         FakePlayerInfo info = FakeAFK.instance.getFakePlayerInfo(player);
 
         //filter out fake players, this isnt needed on disconnect as that method doesn't trigger for fake players
-        String name = player.getNameForScoreboard();
+        String name = player.getScoreboardName();
         if (name.contains("-")) return;
 
         if (info != null) {
@@ -80,8 +80,8 @@ public class Connection {
         }
     }
 
-    public void logFakeDeath(ServerPlayerEntity player) {
-        String name = player.getNameForScoreboard();
+    public void logFakeDeath(ServerPlayer player) {
+        String name = player.getScoreboardName();
         if (!name.contains("-")) return;
         for (FakePlayerInfo fakePlayerInfo : FakeAFK.instance.fakePlayers) {
             fakePlayerInfo.tryLogFakeDeath(name);
@@ -92,14 +92,14 @@ public class Connection {
         for (FakePlayerInfo info : FakeAFK.instance.fakePlayers) {
             info.tick();
         }
-        if (server.getTicks()%1200 == 0) {
+        if (server.getTickCount()%1200 == 0) {
             msptCheck(server);
         }
     }
 
     private void msptCheck(MinecraftServer server) {
         if (msptKickLimit > 0 && msptKickType > 0) {
-            long uspt = server.getAverageNanosPerTick()/1000L;
+            long uspt = server.getAverageTickTimeNanos()/1000L;
             if (uspt > msptKickLimit*1000L) {
                 if (msptKickType == 1) {
                     FakePlayerInfo oldest = getOldest();
