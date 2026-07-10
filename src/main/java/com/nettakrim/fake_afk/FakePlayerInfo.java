@@ -4,23 +4,22 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.Connection;
-import net.minecraft.network.protocol.Packet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.CommonListenerCookie;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.server.players.NameAndId;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.ARGB;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
@@ -267,12 +266,12 @@ public class FakePlayerInfo {
         if (configEntry == null) return;
 
         PlayerList playerManager = server.getPlayerList();
-        playerManager.loadPlayerData(configEntry);
 
-        ClientInformation options = ClientInformation.createDefault();
-
-        ServerPlayer oldPlayer = new ServerPlayer(server, server.overworld(), new GameProfile(configEntry.id(), configEntry.name()), options);
-        oldPlayer.connection = new FakeNetworkHandler(server, oldPlayer);
+        ServerPlayer oldPlayer = new ServerPlayer(server, server.overworld(), new GameProfile(configEntry.id(), configEntry.name()), ClientInformation.createDefault());
+        try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(FakeAFK.LOGGER)) {
+            Optional<ValueInput> valueInput = playerManager.loadPlayerData(configEntry).map(tag -> TagValueInput.create(reporter, server.registryAccess(), tag));
+            valueInput.ifPresent(oldPlayer::load);
+        }
 
         recoverInventory(oldPlayer);
         playerManager.remove(oldPlayer);
@@ -351,29 +350,5 @@ public class FakePlayerInfo {
 
     public boolean isAFKing() {
         return afking;
-    }
-
-    private static class FakeNetworkHandler extends ServerGamePacketListenerImpl {
-        //short-lived object that just needs to last long enough to stop errors from happening when it gets sent wildly into minecraft code
-        public FakeNetworkHandler(MinecraftServer server, ServerPlayer player) {
-            super(server, new FakeConnection(), player, new CommonListenerCookie(player.getGameProfile(), 0, player.clientInformation(), false));
-        }
-
-        @Override
-        public void teleport(double x, double y, double z, float yaw, float pitch) {}
-
-        @Override
-        public void send(Packet<?> packet) {}
-
-        private static class FakeConnection extends Connection {
-            public FakeConnection() {
-                super(null);
-            }
-
-            @Override
-            public boolean isMemoryConnection() {
-                return false;
-            }
-        }
     }
 }
